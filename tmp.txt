@@ -1,0 +1,23 @@
+
+    struct sockaddr_in server_ad;
+    int sd;
+    int length;
+
+    /* Ouverture d'un socket afin de recevoir des demandes de connection */
+    if((sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+    {
+        printf("erreur de creation du socket\n");
+        exit(1);
+    }
+
+    /* Indentification du socket */
+    bzero((char *)&server_ad,sizeof(server_ad));
+    server_ad.sin_family      = AF_INET;
+    server_ad.sin_addr.s_addr = INADDR_ANY;
+    server_ad.sin_port = htons(5555);
+
+    if (bind(sd, (struct sockaddr *)&server_ad, sizeof(server_ad)) < 0)
+    {
+        printf("erreur au bind()\n");
+        exit(1);
+    }

@@ -20,7 +20,7 @@ int main() {
 
 void testCallback(uint8_t* data, int length){
     cout << "receive (" << length << ") : ";
-    printf("%.*s", length, data);
+    //printf("%.*s", length, data);
     cout << endl;
     udp.send(data, length);
 }

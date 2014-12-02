@@ -8,13 +8,36 @@ using namespace std;
 class AtCmd {
 private:
     static UDP* udp;
+    static int seqNumber;
     static void send(string data);
+    static int getNextSequence();
 
 public:
-    AtCmd();
+    static void resetSequence();
+
+    static void sendTakeOff();
     static void sendLanding();
-    void sendTakeOff();
-    void sendEmergency();
+    static void sendEmergency();
+
+    enum MovementFlag {
+    };
+    static void sendMovement(int flag, float roll, float pitch, float gaz, float yaw);
+
+    static void sendConfig(string key, string value);
+
+    static void sendFTrim();
+    static void sendComWDG();
+
+    enum class ControlMode {
+        Idle = 0,
+        SoftwareUpdateReception,
+        PicSoftwareUpdateReception,
+        Control,
+        LogControl,
+    };
+    static void sendControl(ControlMode mode);
+
 };
+static AtCmd::MovementFlag operator+(AtCmd::MovementFlag const& a, AtCmd::MovementFlag const& b);
 
 #endif

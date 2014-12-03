@@ -22,9 +22,9 @@ int main() {
     AtCmd::sendMovement(3, 1, 1, 1, 1);
     AtCmd::sendMovement(3, 0, 0, 0, 0);
     AtCmd::sendMovement(3, -1, -1, -1, -1);
-
-//    udp.receive(testCallback);
+    
 //    udp.send("test");
+  
     return 0;
 }
 /*

@@ -12,16 +12,13 @@ typedef void(*receiveCallback)(uint8_t*, int);
 class UDP {
 private:
     int sock;
-    struct sockaddr* addrsender;
+    struct sockaddr_in* addr;
     string ip_addr;
     uint16_t port;
-    void assign_sockaddr(string host, uint16_t& port, struct sockaddr_in* addr);
-    int assign_local_socket();
     
-   
 public:
     UDP(string host, uint16_t port);
-    ~UDP() {};
+    ~UDP();
 
     void send(uint8_t* data, int length);
     void send(string data);

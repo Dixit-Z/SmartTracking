@@ -2,6 +2,7 @@
 #include <iostream>
 #include "utils/udp.hpp"
 #include "drone/AtCmd.hpp"
+#include <unistd.h>
 
 using namespace std;
 
@@ -16,6 +17,7 @@ int main() {
     AtCmd::sendConfig("video:video_channel", "0");
     AtCmd::sendFTrim();
     AtCmd::sendTakeOff();
+	sleep(2);
     AtCmd::sendLanding();
     AtCmd::sendEmergency();
     AtCmd::sendComWDG();

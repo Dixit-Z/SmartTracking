@@ -8,10 +8,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/socket.h>
-#include <thread>
+#include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 
 UDP::UDP(string host, uint16_t port): port(port), ip_addr(host) {
     cout << "host : " << host << " ; port " << port << endl;
@@ -27,13 +26,13 @@ UDP::UDP(string host, uint16_t port): port(port), ip_addr(host) {
     }
 
     this->addr->sin_family = AF_INET;
-    this->addr->sin_port = htons(this->port);
+    this->addr->sin_port = htons(this->port);                                                                
     
     if(inet_pton(AF_INET, host.c_str(), &this->addr->sin_addr) == 0) {
         perror("inet_pton");
         exit(-1);
     }
-}
+} 
 void UDP::send(uint8_t *data, int length) {
     cout << "send (" << length << ") : ";
     printf("%.*s", length, data);

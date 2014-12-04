@@ -10,7 +10,7 @@ void AtCmd::send(string data) {
 
     // Creation du socket si celui-ci n'existe pas //
     if(AtCmd::udp == NULL) {
-        AtCmd::udp = new UDP("192.168.1.1", 5555);
+        AtCmd::udp = new UDP("192.168.1.1", 5556);
     }
 
     // Envoi du message //

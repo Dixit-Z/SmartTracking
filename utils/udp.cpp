@@ -18,7 +18,7 @@ UDP::UDP(string host, uint16_t port): port(port), ip_addr(host) {
 		perror("socket");
 		exit(errno);
 	}
-    
+     
     if(this->sock == -1) {
         perror("sock");
         exit(errno);

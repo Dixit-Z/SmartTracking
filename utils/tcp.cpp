@@ -1,4 +1,3 @@
-#include "tcp.hpp"
 #include <cstring>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -11,6 +10,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "tcp.hpp"
 
 TCP::TCP(string host, uint16_t port): port(port), ip_addr(host) {
     cout << "host : " << host << " ; port " << port << endl;

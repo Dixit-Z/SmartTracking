@@ -1,4 +1,4 @@
-#include "udp.hpp"
+#include "tcp.hpp"
 #include <cstring>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-UDP::UDP(string host, uint16_t port): port(port), ip_addr(host) {
+TCP::TCP(string host, uint16_t port): port(port), ip_addr(host) {
     cout << "host : " << host << " ; port " << port << endl;
     if((this->sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		perror("socket");
@@ -33,10 +33,14 @@ UDP::UDP(string host, uint16_t port): port(port), ip_addr(host) {
     
     if(inet_pton(AF_INET, host.c_str(), &this->addr->sin_addr) == 0) {
         perror("inet_pton");
-        exit(-1);
+        exit(errno);
     }
+	if(connect(this->sock, (struct sockaddr*) this->addr, sizeof(*this->addr)) == -1) {
+		perror("connect");
+		exit(errno);
+	}
 } 
-void UDP::send(uint8_t *data, int length) {
+void TCP::send(uint8_t *data, int length) {
     cout << "send (" << length << ") : ";
     printf("%.*s", length, data);
     cout << endl;
@@ -47,11 +51,11 @@ void UDP::send(uint8_t *data, int length) {
     }
 }
 
-void UDP::send(string data) {
+void TCP::send(string data) {
     this->send((uint8_t*)data.c_str(), (int)data.length());
 }
 
-void UDP::receive(receiveCallback func) {
+void TCP::receive(receiveCallback func) {
     char buffer[1024];
     socklen_t length = sizeof(this->addr);
     
@@ -64,8 +68,10 @@ void UDP::receive(receiveCallback func) {
     }
 };
 
-UDP::~UDP() {
+TCP::~TCP() {
     delete this->addr;
     close(this->sock);
 }
+
+
 

@@ -17,7 +17,7 @@ int main() {
     AtCmd::sendConfig("video:video_channel", "0");
     AtCmd::sendFTrim();
     AtCmd::sendTakeOff();
-	sleep(2);
+	sleep(5);
     AtCmd::sendLanding();
     AtCmd::sendEmergency();
     AtCmd::sendComWDG();

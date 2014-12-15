@@ -3,6 +3,9 @@
 
 UDP* AtCmd::udp;
 int  AtCmd::seqNumber = 1;
+string AtCmd::sessionId = "00000000";
+string AtCmd::profileId = "00000000";
+string AtCmd::applicationId = "00000000";
 
 void AtCmd::send(string data) {
     // Ajout du retour a la ligne (CR)
@@ -22,6 +25,15 @@ int AtCmd::getNextSequence() {
 }
 
 /////////////////////////// Public methods ///////////////////////////////////////////
+
+void AtCmd::initConfigIds(string sessionId, string profileId, string applicationId) {
+    AtCmd::sessionId = sessionId;
+    AtCmd::profileId = profileId;
+    AtCmd::applicationId = applicationId;
+    AtCmd::sendConfig("custom:session_id", AtCmd::sessionId);
+    AtCmd::sendConfig("custom:profile_id", AtCmd::profileId);
+    AtCmd::sendConfig("custom:application_id", AtCmd::applicationId);
+}
 
 void AtCmd::resetSequence() {
     AtCmd::seqNumber = 1;
@@ -48,7 +60,13 @@ void AtCmd::sendMovement(int flag, float roll, float pitch, float gaz, float yaw
 }
 
 
+void AtCmd::sendConfigIds() {
+    AtCmd::send((string)"AT*CONFIG_IDS=" + to_string(AtCmd::getNextSequence())
+                                         + ",\"" + AtCmd::sessionId + "\",\"" + AtCmd::profileId + "\",\"" + AtCmd::applicationId + "\"");
+}
+
 void AtCmd::sendConfig(string key, string value) {
+    AtCmd::sendConfigIds();
     AtCmd::send((string)"AT*CONFIG=" + to_string(AtCmd::getNextSequence())
                                      + ",\"" + key + "\",\"" + value + "\"");
 }

@@ -12,7 +12,12 @@ private:
     static void send(string data);
     static int getNextSequence();
 
+    static string sessionId;
+    static string profileId;
+    static string applicationId;
+
 public:
+    static void initConfigIds(string sessionId, string profileId, string applicationId);
     static void resetSequence();
 
     static void sendTakeOff();
@@ -24,6 +29,7 @@ public:
     static void sendMovement(int flag, float roll, float pitch, float gaz, float yaw);
 
     static void sendConfig(string key, string value);
+    static void sendConfigIds();
 
     static void sendFTrim();
     static void sendComWDG();

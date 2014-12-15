@@ -27,11 +27,9 @@ int main(int argc, char ** argv) {
     AtCmd::sendControl(AtCmd::ControlMode::Idle);
     AtCmd::sendControl(AtCmd::ControlMode::LogControl);*/
     //AtCmd::sendConfig("video:video_channel", "0");
-    sleep(1);
+    //sleep(1);
 
-    AtCmd::sendConfig("custom:session_id","d2e081a3");
-    AtCmd::sendConfig("custom:profile_id","be27e2e4");
-    AtCmd::sendConfig("custom:application_id","d87f7e0c");
+    AtCmd::initConfigIds("d2e081a3", "be27e2e4", "d87f7e0c");
     AtCmd::sendConfig("control:control_vz_max","700");
     AtCmd::sendConfig("control:control_yaw","1.727876");
     AtCmd::sendConfig("control:euler_angle_max","0.209440");
@@ -50,9 +48,6 @@ int main(int argc, char ** argv) {
     pthread_t pid, ap;
     pthread_create(&pid, NULL, &camera, NULL);
     pthread_create(&ap , NULL, &ack, NULL);
-
-    cin.get();
-    return NULL;
 
     while(1) {
         cout << "Attente de démarrage ..." << endl;
@@ -81,7 +76,7 @@ int main(int argc, char ** argv) {
 void* ack(void* arg) {
     while(1) {
         AtCmd::sendComWDG();
-        usleep(1000000);
+        usleep(500000);
     }
 }
 /*

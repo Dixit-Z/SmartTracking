@@ -13,7 +13,7 @@ set(SOURCE_FILES main.cpp
                  video.cpp)
                  
 set(TrackingBall_UIa
-            ui/main.ui)
+            )
 
 #QT4_WRAP_CPP(helloworld_HEADERS_MOC ${helloworld_HEADERS})
 QT4_WRAP_UI(TrackingBall_UIb ${TrackingBall_UIa})

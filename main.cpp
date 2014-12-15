@@ -3,13 +3,12 @@
 #include "utils/udp.hpp"
 #include "drone/AtCmd.hpp"
 #include <unistd.h>
-#include "ui_main.h"
 #include "video.hpp"
 
 using namespace std;
 
 //void testCallback(uint8_t* data, int length);
-
+void* ack(void* arg);
 
 int main(int argc, char ** argv) {
 
@@ -23,38 +22,67 @@ int main(int argc, char ** argv) {
 */
 
     cout << "Configuration du drone ..." << endl;
-    AtCmd::sendConfig("general:navdata_demo", "TRUE");
-    AtCmd::sendControl(AtCmd::ControlMode::LogControl);
+    //AtCmd::sendConfig("general:navdata_demo", "TRUE");
+    /*AtCmd::sendControl(AtCmd::ControlMode::LogControl);
     AtCmd::sendControl(AtCmd::ControlMode::Idle);
-    AtCmd::sendControl(AtCmd::ControlMode::LogControl);
-    AtCmd::sendConfig("video:video_channel", "0");
+    AtCmd::sendControl(AtCmd::ControlMode::LogControl);*/
+    //AtCmd::sendConfig("video:video_channel", "0");
     sleep(1);
+
+    AtCmd::sendConfig("custom:session_id","d2e081a3");
+    AtCmd::sendConfig("custom:profile_id","be27e2e4");
+    AtCmd::sendConfig("custom:application_id","d87f7e0c");
+    AtCmd::sendConfig("control:control_vz_max","700");
+    AtCmd::sendConfig("control:control_yaw","1.727876");
+    AtCmd::sendConfig("control:euler_angle_max","0.209440");
+    AtCmd::sendConfig("control:altitude_max","3000");
+    AtCmd::sendConfig("video:bitrate_ctrl_mode","0");
+    AtCmd::sendConfig("video:bitrate","1000");
+    AtCmd::sendConfig("video:max_bitrate","4000");
+    AtCmd::sendConfig("video:video_codec","129");
+    AtCmd::sendConfig("video:video_channel","0");
+    AtCmd::sendConfig("video:video_on_usb","FALSE");
+    AtCmd::sendConfig("control:outdoor","FALSE");
+    AtCmd::sendConfig("control:flight_without_shell","FALSE");
+    AtCmd::sendConfig("general:navdata_demo","FALSE");
 
     cout << "Demarrage du flux video ..." << endl;
-    pthread_t pid;
+    pthread_t pid, ap;
     pthread_create(&pid, NULL, &camera, NULL);
+    pthread_create(&ap , NULL, &ack, NULL);
 
-    cout << "Attente de démarrage ..." << endl;
     cin.get();
-    AtCmd::sendFTrim();
-    sleep(1);
-    AtCmd::sendTakeOff();
-    sleep(2);
-    setActivate(1);
+    return NULL;
 
-	cin.get();
-    cout << "Atterissage ..." << endl;
-    setActivate(0);
-    AtCmd::sendLanding();
+    while(1) {
+        cout << "Attente de démarrage ..." << endl;
+        cin.get();
+        AtCmd::sendFTrim();
+        sleep(1);
+        AtCmd::sendTakeOff();
+        sleep(2);
+
+        cout << "Attente de tracking ..." << endl;
+        cin.get();
+        setActivate(1);
+
+        cin.get();
+        cout << "Atterissage ..." << endl;
+        setActivate(0);
+        AtCmd::sendLanding();
+    }
 
     cout << "Appuyez sur une touche pour quitter l'application." << endl;
     cin.get();
 
-    AtCmd::sendMovement(3, 1, 1, 1, 1);
-    AtCmd::sendMovement(3, 0, 0, 0, 0);
-    AtCmd::sendMovement(3, -1, -1, -1, -1);
-
     return 0;
+}
+
+void* ack(void* arg) {
+    while(1) {
+        AtCmd::sendComWDG();
+        usleep(1000000);
+    }
 }
 /*
 void testCallback(uint8_t* data, int length){

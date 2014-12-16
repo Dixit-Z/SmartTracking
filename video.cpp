@@ -111,6 +111,7 @@ void* camera(void* arg) {
     pthread_create(&ii, NULL, getimg, NULL);
 
 #elif output_video == ov_local
+    //VideoCapture cap("tcp://192.168.1.1:5555"); //capture video
     VideoCapture cap(0); //capture video
 #else
     VideoCapture cap("tcp://192.168.1.1:5555"); //capture video
@@ -232,10 +233,16 @@ void* camera(void* arg) {
             drawContours(imgOriginal, contours, i, color, 2, 8, hierarchy, 0, Point());
         }*/
 
-        if (dZone > 10000) {
+        if (dZone > 1000) {
             roll = pitch = gaz = yaw = 0;
 
             string Action = "Mouvement a effectuer : ";
+	    if(dZone > 30000){
+	    	Action += "Recule, ";
+	    }else{
+	    	Action += "Avance, ";
+	    
+	    }
             if (posX > fSize.width / 2 + vsplit) {
                 Action += "Gauche, ";   yaw = 0.25f;
             } else if (posX < fSize.width / 2 - vsplit) {
@@ -250,7 +257,7 @@ void* camera(void* arg) {
             if(activate) {
                 AtCmd::sendMovement(0, roll, pitch, gaz, yaw);
             }
-        }
+	}
 
         // Genere la fenetre de repere //
         imgLines.setTo(Scalar(255, 255, 255));

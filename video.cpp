@@ -1,11 +1,32 @@
 #include "drone/AtCmd.hpp"
 #include "video.hpp"
 
+#define ov_local 1
+#define ov_remote_opencv 2
+#define ov_remote_ffmpeg 4
+#define output_video ov_remote_ffmpeg
+
+// FFmpeg
+extern "C" {
+    #include <libavcodec/avcodec.h>
+    #include <libavformat/avformat.h>
+    #include <libswscale/swscale.h>
+}
+
 string winOutputVideo = "Projet ArDrone";
 string winRepere	  = "Fenetre Repere";
 string winDetected	  = "Image Noir et blanc";
 
 int activate = 0;
+
+pthread_mutex_t mutexVideo;
+// Camera image
+IplImage *img;
+AVFormatContext *pFormatCtx;
+AVCodecContext  *pCodecCtx;
+AVFrame         *pFrame, *pFrameBGR;
+uint8_t         *bufferBGR;
+SwsContext      *pConvertCtx;
 
 void setActivate(int value) {
     activate = value;
@@ -17,12 +38,90 @@ void drawCross(Mat f, int x, int y, Scalar color) {
     line(f, Point(x, y - 10), Point(x, y + 10), color, 2);
 }
 
+void* getimg(void* arg) {
+    AVPacket packet;
+    int frameFinished = 0;
+
+    // Read all frames
+    while (av_read_frame(pFormatCtx, &packet) >= 0) {
+        // Decode the frame
+        avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
+
+        // Decoded all frames
+        if (frameFinished) {
+            // Convert to BGR
+            pthread_mutex_lock(&mutexVideo);
+            sws_scale(pConvertCtx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameBGR->data, pFrameBGR->linesize);
+            pthread_mutex_unlock(&mutexVideo);
+
+            // Free the packet and break immidiately
+            av_free_packet(&packet);
+            //break;
+        }
+
+        // Free the packet
+        av_free_packet(&packet);
+    }
+}
+
 void* camera(void* arg) {
-    Size fSize;
+    pthread_mutex_init(&mutexVideo, NULL);
+#if output_video == ov_remote_ffmpeg
+    if (avformat_open_input(&pFormatCtx, "tcp://192.168.1.1:5555", NULL, NULL) < 0) {
+        cout << "ERREUR !!!";
+        return 0;
+    }
+    // Retrive and dump stream information
+    avformat_find_stream_info(pFormatCtx, NULL);
+    av_dump_format(pFormatCtx, 0, "tcp://192.168.1.1:5555", 0);
+
+    // Find the decoder for the video stream
+    pCodecCtx = pFormatCtx->streams[0]->codec;
+    AVCodec *pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+    if (pCodec == NULL) {
+        cout << "ERREUR !!!";
+        return 0;
+    }
+    // Open codec
+    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
+        cout << "ERREUR !!!";
+        return 0;
+    }
+    // Allocate video frames and a buffer
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,28,1)
+        pFrame = av_frame_alloc();
+        pFrameBGR = av_frame_alloc();
+#else
+    pFrame = avcodec_alloc_frame();
+    pFrameBGR = avcodec_alloc_frame();
+#endif
+    bufferBGR = (uint8_t*)av_mallocz(avpicture_get_size(PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height) * sizeof(uint8_t));
+    // Assign appropriate parts of buffer to image planes in pFrameBGR
+    avpicture_fill((AVPicture*)pFrameBGR, bufferBGR, PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height);
+    // Convert it to BGR
+    pConvertCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, PIX_FMT_BGR24, SWS_SPLINE, NULL, NULL, NULL);
+    // Allocate an IplImage
+    img = cvCreateImage(cvSize(pCodecCtx->width, (pCodecCtx->height == 368) ? 360 : pCodecCtx->height), IPL_DEPTH_8U, 3);
+    if (!img) {
+        cout << "ERREUR !!!";
+        return 0;
+    }
+
+    pthread_t ii;
+    pthread_create(&ii, NULL, getimg, NULL);
+
+#elif output_video == ov_local
     VideoCapture cap(0); //capture video
+#else
+    VideoCapture cap("tcp://192.168.1.1:5555"); //capture video
+#endif
+
+    Size fSize(640, 360);
 
     int vsplit = 55, hsplit = 55;
 
+
+#if output_video != ov_remote_ffmpeg
     if (!cap.isOpened()) {
         cout << "Impossible de lire le flux de la camera" << endl;
         return NULL;
@@ -31,7 +130,7 @@ void* camera(void* arg) {
     cap >> frame;
     fSize.width = frame.cols;
     fSize.height = frame.rows;
-
+#endif
 
     /*  Choix des valeurs basR et hautR pour correspondre au min et max celon une couleur
     Orange  0-22
@@ -77,22 +176,22 @@ void* camera(void* arg) {
     float pitch;
     float gaz;
     float yaw;
-    /*AtCmd::sendMovement(3, 1, 1, 1, 1);
-    AtCmd::sendMovement(3, 0, 0, 0, 0);
-    AtCmd::sendMovement(3, -1, -1, -1, -1);*/
-
 
     while (true) {
         Mat imgOriginal;
 
+#if output_video != ov_remote_ffmpeg
         bool bSuccess = cap.read(imgOriginal); // Nouvelle capture
-
-
-
         if (!bSuccess) {
             cout << "Impossible le flux video" << endl;
             break;
         }
+#else
+        pthread_mutex_lock(&mutexVideo);
+        memcpy(img->imageData, pFrameBGR->data[0], pCodecCtx->width * ((pCodecCtx->height == 368) ? 360 : pCodecCtx->height) * sizeof(uint8_t) * 3);
+        pthread_mutex_unlock(&mutexVideo);
+        imgOriginal = cv::cvarrToMat(img, true);
+#endif
 
         Mat imgHSV;
 
@@ -138,18 +237,18 @@ void* camera(void* arg) {
 
             string Action = "Mouvement a effectuer : ";
             if (posX > fSize.width / 2 + vsplit) {
-                Action += "Gauche, ";   yaw = 1;
+                Action += "Gauche, ";   yaw = 0.25f;
             } else if (posX < fSize.width / 2 - vsplit) {
-                Action += "Droite, ";   yaw = -1;
+                Action += "Droite, ";   yaw = -0.25f;
             } if (posY > fSize.height / 2 + hsplit) {
-                Action += "Descendre";  gaz = -1;
+                Action += "Descendre";  gaz = -0.25f;
             } else if (posY < fSize.height / 2 - hsplit) {
-                Action += "Monter";     gaz = 1;
+                Action += "Monter";     gaz = 0.25f;
             }
             cout << Action << endl;
 
             if(activate) {
-                AtCmd::sendMovement(3, roll, pitch, gaz, yaw);
+                AtCmd::sendMovement(0, roll, pitch, gaz, yaw);
             }
         }
 

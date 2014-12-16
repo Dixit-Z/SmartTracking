@@ -20,7 +20,6 @@ set(TrackingBall_UIa
             )
 
 #QT4_WRAP_CPP(helloworld_HEADERS_MOC ${helloworld_HEADERS})
-QT4_WRAP_UI(TrackingBall_UIb ${TrackingBall_UIa})
 #QT4_ADD_RESOURCES(helloworld_RESOURCES_RCC ${helloworld_RESOURCES})
 INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR} )
 INCLUDE(${QT_USE_FILE})

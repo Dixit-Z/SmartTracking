@@ -184,7 +184,7 @@ void* camera(void* arg) {
 #if output_video != ov_remote_ffmpeg
         bool bSuccess = cap.read(imgOriginal); // Nouvelle capture
         if (!bSuccess) {
-            cout << "Impossible le flux video" << endl;
+            cout << "Impossible de lire le flux video" << endl;
             break;
         }
 #else

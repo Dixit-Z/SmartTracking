@@ -12,7 +12,7 @@ void* ack(void* arg);
 
 int main(int argc, char ** argv) {
 
-/*    QApplication app(argc, argv);
+/*  QApplication app(argc, argv);
     QMainWindow main;
     Ui::MainWindow q;
     q.setupUi(&main);

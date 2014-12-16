@@ -243,10 +243,14 @@ void* camera(void* arg) {
 	    	Action += "Avance, ";
 	    
 	    }
+
+            float mi = 15, ma = 50;
             if (posX > fSize.width / 2 + vsplit) {
-                Action += "Gauche, ";   yaw = 0.25f;
+                yaw = ((float)(posX-fSize.width/2-vsplit) / (float)(fSize.width/2-vsplit) * (ma - mi) + mi) / 100;
+                Action += "Gauche ("+ to_string(yaw)+"%), ";
             } else if (posX < fSize.width / 2 - vsplit) {
-                Action += "Droite, ";   yaw = -0.25f;
+                yaw = (((float)(fSize.width/2-vsplit) - (float)(posX)) / (float)(fSize.width/2-vsplit) * -(ma - mi) - mi) / 100;
+                Action += "Droite ("+ to_string(yaw)+"%), ";
             } if (posY > fSize.height / 2 + hsplit) {
                 Action += "Descendre";  gaz = -0.25f;
             } else if (posY < fSize.height / 2 - hsplit) {

@@ -51,6 +51,12 @@ void AtCmd::sendEmergency() {
     AtCmd::send((string)"AT*REF=" + to_string(AtCmd::getNextSequence()) + ",290717952");
 }
 
+void AtCmd::setLed(AtCmd::LedAnimation animation, float frequency, int duration) {
+    AtCmd::send((string)"AT*LED=" + to_string(AtCmd::getNextSequence())
+                                  + "," + to_string((int)animation)
+                                  + "," + to_string(*(int*)(&frequency))
+                                  + "," + to_string(duration));
+}
 
 void AtCmd::sendMovement(int flag, float roll, float pitch, float gaz, float yaw) {
     AtCmd::send((string)"AT*PCMD=" + to_string(AtCmd::getNextSequence())

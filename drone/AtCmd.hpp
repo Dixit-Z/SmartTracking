@@ -16,6 +16,11 @@ private:
     static string profileId;
     static string applicationId;
 
+    static pthread_t* pidLoop;
+    static pthread_mutex_t mutexLoop;
+    static useconds_t intervalLoop;
+    static void* threadLoop(void*);
+
 public:
     static void initConfigIds(string sessionId, string profileId, string applicationId);
     static void resetSequence();
@@ -68,6 +73,9 @@ public:
         LogControl,
     };
     static void sendControl(ControlMode mode);
+
+    static void startLoop(int interval);
+    static void stopLoop();
 
 };
 static AtCmd::MovementFlag operator+(AtCmd::MovementFlag const& a, AtCmd::MovementFlag const& b);

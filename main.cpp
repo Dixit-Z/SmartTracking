@@ -2,13 +2,11 @@
 #include <iostream>
 #include "utils/udp.hpp"
 #include "drone/AtCmd.hpp"
-#include <unistd.h>
 #include "video.hpp"
 
 using namespace std;
 
 //void testCallback(uint8_t* data, int length);
-void* ack(void* arg);
 
 int main(int argc, char ** argv) {
 
@@ -22,13 +20,6 @@ int main(int argc, char ** argv) {
 */
 
     cout << "Configuration du drone ..." << endl;
-    //AtCmd::sendConfig("general:navdata_demo", "TRUE");
-    /*AtCmd::sendControl(AtCmd::ControlMode::LogControl);
-    AtCmd::sendControl(AtCmd::ControlMode::Idle);
-    AtCmd::sendControl(AtCmd::ControlMode::LogControl);*/
-    //AtCmd::sendConfig("video:video_channel", "0");
-    //sleep(1);
-
     AtCmd::initConfigIds("d2e081a3", "be27e2e4", "d87f7e0c");
     AtCmd::sendConfig("control:control_vz_max","700");
     AtCmd::sendConfig("control:control_yaw","1.727876");
@@ -43,29 +34,36 @@ int main(int argc, char ** argv) {
     AtCmd::sendConfig("control:outdoor","FALSE");
     AtCmd::sendConfig("control:flight_without_shell","FALSE");
     AtCmd::sendConfig("general:navdata_demo","FALSE");
+    AtCmd::sendControl(AtCmd::ControlMode::LogControl);
 
     cout << "Demarrage du flux video ..." << endl;
-    pthread_t pid, ap;
+    pthread_t pid;
     pthread_create(&pid, NULL, &camera, NULL);
-    pthread_create(&ap , NULL, &ack, NULL);
+    AtCmd::startLoop(200);
 
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-noreturn"
     while(1) {
         cout << "Attente de démarrage ..." << endl;
+        AtCmd::setLed(AtCmd::LedAnimation::BLINK_RED, 2, 5);
         cin.get();
         AtCmd::sendFTrim();
         sleep(1);
         AtCmd::sendTakeOff();
         sleep(2);
+        AtCmd::setLed(AtCmd::LedAnimation::BLINK_GREEN, 2, 5);
 
         cout << "Attente de tracking ..." << endl;
         cin.get();
         setActivate(1);
+        AtCmd::setLed(AtCmd::LedAnimation::BLINK_ORANGE, 2, 5);
 
         cin.get();
         cout << "Atterissage ..." << endl;
         setActivate(0);
         AtCmd::sendLanding();
     }
+    #pragma clang diagnostic pop
 
     cout << "Appuyez sur une touche pour quitter l'application." << endl;
     cin.get();
@@ -73,12 +71,6 @@ int main(int argc, char ** argv) {
     return 0;
 }
 
-void* ack(void* arg) {
-    while(1) {
-        AtCmd::sendComWDG();
-        usleep(500000);
-    }
-}
 /*
 void testCallback(uint8_t* data, int length){
     cout << "receive (" << length << ") : ";

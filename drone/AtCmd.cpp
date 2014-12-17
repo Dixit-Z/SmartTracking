@@ -1,4 +1,5 @@
 #include <sstream>
+#include <unistd.h>
 #include "AtCmd.hpp"
 
 UDP* AtCmd::udp;
@@ -6,6 +7,11 @@ int  AtCmd::seqNumber = 1;
 string AtCmd::sessionId = "00000000";
 string AtCmd::profileId = "00000000";
 string AtCmd::applicationId = "00000000";
+
+pthread_t* AtCmd::pidLoop = NULL;
+pthread_mutex_t AtCmd::mutexLoop = PTHREAD_MUTEX_INITIALIZER;
+useconds_t AtCmd::intervalLoop;
+
 
 void AtCmd::send(string data) {
     // Ajout du retour a la ligne (CR)
@@ -90,4 +96,37 @@ void AtCmd::sendComWDG() {
 void AtCmd::sendControl(ControlMode mode) {
     AtCmd::send((string)"AT*CTRL=" + to_string(AtCmd::getNextSequence())
                                    + "," + to_string((int)mode) + ",0");
+}
+
+void AtCmd::startLoop(int interval) {
+    AtCmd::intervalLoop = (useconds_t) interval * 1000;
+    pthread_mutex_lock(&AtCmd::mutexLoop);
+    if(AtCmd::pidLoop == NULL) {
+        AtCmd::pidLoop = (pthread_t*) malloc(sizeof(pthread_t));
+        pthread_create(AtCmd::pidLoop, NULL, AtCmd::threadLoop, NULL);
+    }
+    pthread_mutex_unlock(&AtCmd::mutexLoop);
+}
+
+void AtCmd::stopLoop() {
+    pthread_mutex_lock(&AtCmd::mutexLoop);
+    if(AtCmd::pidLoop != NULL) {
+        if (pthread_cancel(*AtCmd::pidLoop) == 0) {
+            free(AtCmd::pidLoop);
+            AtCmd::pidLoop = NULL;
+        }
+    }
+    pthread_mutex_unlock(&AtCmd::mutexLoop);
+}
+
+void* AtCmd::threadLoop(void*){
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-noreturn"
+    while(true){
+        AtCmd::sendComWDG();
+        usleep(AtCmd::intervalLoop);
+        pthread_testcancel();
+    }
+    #pragma clang diagnostic pop
+    return NULL;
 }

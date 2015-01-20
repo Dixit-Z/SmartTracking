@@ -25,15 +25,26 @@ int main(int argc, char ** argv) {
     AtCmd::sendConfig("control:control_yaw","1.727876");
     AtCmd::sendConfig("control:euler_angle_max","0.209440");
     AtCmd::sendConfig("control:altitude_max","3000");
-    AtCmd::sendConfig("video:bitrate_ctrl_mode","0");
+    AtCmd::sendConfig("control:autonomous_flight","FALSE");
+    AtCmd::sendConfig("control:manual_trim","FALSE");
+    AtCmd::sendConfig("control:outdoor","FALSE");
+    AtCmd::sendConfig("control:flight_without_shell","FALSE");
+
+    AtCmd::sendConfig("video:bitrate_control_mode","0");
     AtCmd::sendConfig("video:bitrate","1000");
     AtCmd::sendConfig("video:max_bitrate","4000");
     AtCmd::sendConfig("video:video_codec","129");
     AtCmd::sendConfig("video:video_channel","0");
     AtCmd::sendConfig("video:video_on_usb","FALSE");
-    AtCmd::sendConfig("control:outdoor","FALSE");
-    AtCmd::sendConfig("control:flight_without_shell","FALSE");
+
     AtCmd::sendConfig("general:navdata_demo","FALSE");
+    AtCmd::sendConfig("general:ardrone_name","ISTY AR DRONE");
+    AtCmd::sendConfig("general:com_watchdog","2");
+    AtCmd::sendConfig("general:video_enable","TRUE");
+    AtCmd::sendConfig("general:vbat_min","9000");
+
+    AtCmd::sendConfig("network:ssid_single_player","AR Drone ISTY 2014");
+
     AtCmd::sendControl(AtCmd::ControlMode::LogControl);
 
     cout << "Demarrage du flux video ..." << endl;

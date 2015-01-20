@@ -15,33 +15,34 @@
 
 
 BIDAULT Cyril : cyril.bidault@isty.uvsq.fr
-BRASSEUR Théo : theo.brasseur@isty.uvsq.fr
+BRASSEUR Theo : theo.brasseur@isty.uvsq.fr
 GARNAUD Antonin : antonin.garnaud@isty.uvsq.fr
 TRENDAFILOV Alexandre : alexandre.trendafilov@isty.uvsq.fr
 
 CALCADO Fabien : fabien.calcado@uvsq.fr
 BLASEVIC Pierre : pierre.blazevic@uvsq.fr
 
-Date dernière mise à jour : 30/12/14
+Date derniere mise a jour : 30/12/14
 
 Pour utiliser le svn :  http://svn.myidea.ovh/Drone/
-	1) Créer un dossier (emplacement au choix) : mkdir projetDrone
-	2) Pour récupérer le svn : svn checkout http://svn.myidea.ovh/Drone/  (à ne faire qu'une seule fois)
-	3) Pour mettre le svn à la dernière révision: svn update
+	0) Installer subversion sudo apt-get install subversion
+	1) Creer un dossier (emplacement au choix) : mkdir projetDrone
+	2) Pour recuperer le svn : svn checkout http://svn.myidea.ovh/Drone/  (a ne faire qu'une seule fois)
+	3) Pour mettre le svn a la derniere revision: svn update
 	4) Pour ajouter un fichier : svn add leFichier
-	5) Pour enregistrer les fichiers modifiés (ou créés): svn commit -m "Un commentaire"
+	5) Pour enregistrer les fichiers modifies (ou crees): svn commit -m "Un commentaire"
 
-Pour compiler puis éxécuter notre projet il faut :
-	1) Créer un dossier (emplacement et nom au choix) : mkdir release
-	2) Se placer dans le dossier préalablement créé (ici release) : cd release
+Pour compiler puis executer notre projet il faut :
+	1) Creer un dossier (emplacement et nom au choix) : mkdir release
+	2) Se placer dans le dossier prealablement cree (ici release) : cd release
 	3) Avoir cmake d'installer sur la machine : cmake /dossier/au/choix/TrackingBall
 	4) Compilation avec le make : make
-	5) Exécution : ./TrackingBall
+	5) Execution : ./TrackingBall
 
 Pour installer OpenCV (version 2.4.9 pour notre projet) :
 	0) Etre en superutilisateur : su
 	1) Installer la version graphique de cmake : apt-get install cmake-gui
-	2) Télécharger la version 2.4.9 : http://opencv.org/downloads.html
+	2) Telecharger la version 2.4.9 : http://opencv.org/downloads.html
 	3) Se placer dans le dossier : cd /home/antonin/Documents/opencv-2.4.9/
 	4) Faire : cmake-gui
 	5) Ouverture d'une fenêtre graphque : mettre le dossier openCV dans BrowseCode

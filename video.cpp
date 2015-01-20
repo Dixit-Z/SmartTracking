@@ -20,7 +20,6 @@ string winDetected	  = "Image Noir et blanc";
 int activate = 0;
 
 pthread_mutex_t mutexVideo;
-// Camera image
 IplImage *img;
 AVFormatContext *pFormatCtx;
 AVCodecContext  *pCodecCtx;
@@ -40,26 +39,21 @@ void drawCross(Mat f, int x, int y, Scalar color) {
 
 void* getimg(void* arg) {
     AVPacket packet;
-    int frameFinished = 0;
+    int hasFinished = 0;
 
-    // Read all frames
+    // Tant que des frames sont disponibles
     while (av_read_frame(pFormatCtx, &packet) >= 0) {
-        // Decode the frame
-        avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
+        // Decode progressivement l'image
+        avcodec_decode_video2(pCodecCtx, pFrame, &hasFinished, &packet);
 
-        // Decoded all frames
-        if (frameFinished) {
-            // Convert to BGR
+        // Lorsque l'image est prete //
+        if (hasFinished) {
+            // Convertie l'image au format BGR //
             pthread_mutex_lock(&mutexVideo);
-            sws_scale(pConvertCtx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameBGR->data, pFrameBGR->linesize);
+            sws_scale(pConvertCtx, (const uint8_t *const *) pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameBGR->data, pFrameBGR->linesize);
             pthread_mutex_unlock(&mutexVideo);
-
-            // Free the packet and break immidiately
             av_free_packet(&packet);
-            //break;
         }
-
-        // Free the packet
         av_free_packet(&packet);
     }
 }
@@ -71,36 +65,25 @@ void* camera(void* arg) {
         cout << "ERREUR !!!";
         return 0;
     }
-    // Retrive and dump stream information
     avformat_find_stream_info(pFormatCtx, NULL);
     av_dump_format(pFormatCtx, 0, "tcp://192.168.1.1:5555", 0);
-
-    // Find the decoder for the video stream
     pCodecCtx = pFormatCtx->streams[0]->codec;
     AVCodec *pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
     if (pCodec == NULL) {
         cout << "ERREUR !!!";
         return 0;
     }
-    // Open codec
     if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
         cout << "ERREUR !!!";
         return 0;
     }
-    // Allocate video frames and a buffer
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,28,1)
-        pFrame = av_frame_alloc();
-        pFrameBGR = av_frame_alloc();
-#else
+    //pFrame = av_frame_alloc();
+    //pFrameBGR = av_frame_alloc();
     pFrame = avcodec_alloc_frame();
     pFrameBGR = avcodec_alloc_frame();
-#endif
     bufferBGR = (uint8_t*)av_mallocz(avpicture_get_size(PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height) * sizeof(uint8_t));
-    // Assign appropriate parts of buffer to image planes in pFrameBGR
     avpicture_fill((AVPicture*)pFrameBGR, bufferBGR, PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height);
-    // Convert it to BGR
     pConvertCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, PIX_FMT_BGR24, SWS_SPLINE, NULL, NULL, NULL);
-    // Allocate an IplImage
     img = cvCreateImage(cvSize(pCodecCtx->width, (pCodecCtx->height == 368) ? 360 : pCodecCtx->height), IPL_DEPTH_8U, 3);
     if (!img) {
         cout << "ERREUR !!!";
@@ -111,8 +94,7 @@ void* camera(void* arg) {
     pthread_create(&ii, NULL, getimg, NULL);
 
 #elif output_video == ov_local
-    //VideoCapture cap("tcp://192.168.1.1:5555"); //capture video
-    VideoCapture cap(0); //capture video
+    VideoCapture cap(0); //capture video webcam
 #else
     VideoCapture cap("tcp://192.168.1.1:5555"); //capture video
 #endif
@@ -236,13 +218,14 @@ void* camera(void* arg) {
         if (dZone > 1000) {
             roll = pitch = gaz = yaw = 0;
 
+
             string Action = "Mouvement a effectuer : ";
-	    if(dZone > 30000){
-	    	Action += "Recule, ";
-	    }else{
-	    	Action += "Avance, ";
-	    
-	    }
+            if(dZone > 100000){
+                Action += "Recule, "; //pitch = 0.05f;
+            }else{
+                Action += "Avance, "; pitch = -0.05f;
+            }
+
 
             float mi = 15, ma = 50;
             if (posX > fSize.width / 2 + vsplit) {
@@ -256,12 +239,19 @@ void* camera(void* arg) {
             } else if (posY < fSize.height / 2 - hsplit) {
                 Action += "Monter";     gaz = 0.25f;
             }
+            if(pitch != 0) {
+                roll = yaw / 2;
+                yaw = 0;
+            }
             cout << Action << endl;
 
             if(activate) {
-                AtCmd::sendMovement(0, roll, pitch, gaz, yaw);
+                AtCmd::sendMovement(3, roll, pitch, gaz, yaw);
             }
-	}
+	    } else
+            if(activate) {
+                //AtCmd::sendMovement(0, 0, 0, 0, 0);
+            }
 
         // Genere la fenetre de repere //
         imgLines.setTo(Scalar(255, 255, 255));

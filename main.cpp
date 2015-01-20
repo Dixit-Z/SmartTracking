@@ -55,6 +55,7 @@ int main(int argc, char ** argv) {
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wmissing-noreturn"
     while(1) {
+        AtCmd::sendMovement(0, 0, 0, 0, 0);
         cout << "Attente de démarrage ..." << endl;
         AtCmd::setLed(AtCmd::LedAnimation::BLINK_RED, 2, 5);
         cin.get();

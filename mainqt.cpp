@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
     QAtCmd::sendConfig("video:video_channel", "0");
     sleep(1);*/
 
-    QAtCmd::sendConfig("custom:session_id","d2e081a3");
+    /*QAtCmd::sendConfig("custom:session_id","d2e081a3");
     QAtCmd::sendConfig("custom:profile_id","be27e2e4");
     QAtCmd::sendConfig("custom:application_id","d87f7e0c");
     QAtCmd::sendConfig("control:control_vz_max","700");
@@ -36,12 +36,12 @@ int main(int argc, char ** argv) {
     QAtCmd::sendConfig("video:video_on_usb","FALSE");
     QAtCmd::sendConfig("control:outdoor","FALSE");
     QAtCmd::sendConfig("control:flight_without_shell","FALSE");
-    QAtCmd::sendConfig("general:navdata_demo","FALSE");
+    QAtCmd::sendConfig("general:navdata_demo","FALSE");*/
 
-    cout << "Demarrage du flux video ..." << endl;
+    /*cout << "Demarrage du flux video ..." << endl;
     pthread_t pid, ap;
     pthread_create(&pid, NULL, &camera, NULL);
-    //pthread_create(&ap , NULL, &ack, NULL);
+    pthread_create(&ap , NULL, &ack, NULL);*/
 
 
     QApplication app(argc, argv);
@@ -57,6 +57,7 @@ void* ack(void* arg) {
         usleep(1000000);
     }
 }
+
 /*
 void testCallback(uint8_t* data, int length){
     cout << "receive (" << length << ") : ";

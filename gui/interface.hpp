@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QGridLayout>
 #include <QVBoxLayout>
+#include "QShortcut"
 
 class MyWidget : public QWidget {
 public:

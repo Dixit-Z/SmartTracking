@@ -22,19 +22,44 @@ MyWidget::MyWidget(QWidget *parent) : QWidget(parent) {
     QPushButton *yawRight = new QPushButton("yawRight");
     QPushButton *yawLeft = new QPushButton("yawLeft");
 
+    QShortcut *takeOffsc = new QShortcut(QKeySequence(tr("Return")), takeOff);
+    QObject::connect(takeOffsc, SIGNAL(activated()), qAtCmd, SLOT(sendTakeOff()));
+    QShortcut *landingsc = new QShortcut(QKeySequence(tr("Shift+Return")), landing);
+    QObject::connect(landingsc, SIGNAL(activated()), qAtCmd, SLOT(sendLanding()));
+    QShortcut *emergencysc = new QShortcut(QKeySequence(tr("Escape")), emergency);
+    QObject::connect(emergencysc, SIGNAL(activated()), qAtCmd, SLOT(sendEmergency()));
+    QShortcut *goUpsc = new QShortcut(QKeySequence(tr("Space")), goUp);
+    QObject::connect(goUpsc, SIGNAL(activated()), qAtCmd, SLOT(goUp()));
+    QShortcut *goDownsc = new QShortcut(QKeySequence(tr("Shift+Space")), goDown);
+    QObject::connect(goDownsc, SIGNAL(activated()), qAtCmd, SLOT(goDown()));
+    QShortcut *moveRightsc = new QShortcut(QKeySequence("d"), moveRight);
+    QObject::connect(moveRightsc, SIGNAL(activated()), qAtCmd, SLOT(moveRight()));
+    QShortcut *moveLeftsc = new QShortcut(QKeySequence(tr("q")), moveLeft);
+    QObject::connect(moveLeftsc, SIGNAL(activated()), qAtCmd, SLOT(moveLeft()));
+    QShortcut *moveBWsc = new QShortcut(QKeySequence(tr("s")), moveBW);
+    QObject::connect(moveBWsc, SIGNAL(activated()), qAtCmd, SLOT(moveBW()));
+    QShortcut *moveFWsc = new QShortcut(QKeySequence(tr("z")), moveFW);
+    QObject::connect(moveFWsc, SIGNAL(activated()), qAtCmd, SLOT(moveFW()));
+    QShortcut *ftrimsc = new QShortcut(QKeySequence(tr("t")), fTrim);
+    QObject::connect(ftrimsc, SIGNAL(activated()), qAtCmd, SLOT(sendFTrim()));
+    QShortcut *yawRightsc = new QShortcut(QKeySequence(tr("a")), yawRight);
+    QObject::connect(yawRightsc, SIGNAL(activated()), qAtCmd, SLOT(yawRight()));
+    QShortcut *yawLeftsc = new QShortcut(QKeySequence(tr("e")), yawLeft);
+    QObject::connect(yawLeftsc, SIGNAL(activated()), qAtCmd, SLOT(yawLeft()));
+
 
     connect(takeOff, SIGNAL(clicked()), qAtCmd, SLOT(sendTakeOff()));
     connect(landing, SIGNAL(clicked()), qAtCmd, SLOT(sendLanding()));
     connect(emergency, SIGNAL(clicked()), qAtCmd, SLOT(sendEmergency()));
-    connect(goUp, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, 0, 1, 0)));
-    connect(goDown, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, O, -1, 0)));
-    connect(moveRight, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 1, 0, 0, 0, 0)));
-    connect(moveLeft, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, -1, 0, 0, 0, 0)));
-    connect(moveBW, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, -1, 0, 0)));
-    connect(moveFW, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, 1, 0, 0)));
-    connect(moveFW, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, 1, 0, 0)));
-    connect(yawRight, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, 0, 0, 1)));
-    connect(yawLeft, SIGNAL(clicked()), qAtCmd, SLOT(sendMovement(3, 0, 0, 0, -1)));
+    connect(goUp, SIGNAL(clicked()), qAtCmd, SLOT(goUp()));
+    connect(goDown, SIGNAL(clicked()), qAtCmd, SLOT(goDown()));
+    connect(moveRight, SIGNAL(clicked()), qAtCmd, SLOT(moveRight()));
+    connect(moveLeft, SIGNAL(clicked()), qAtCmd, SLOT(moveLeft()));
+    connect(moveBW, SIGNAL(clicked()), qAtCmd, SLOT(moveBW()));
+    connect(moveFW, SIGNAL(clicked()), qAtCmd, SLOT(moveFW()));
+    connect(yawRight, SIGNAL(clicked()), qAtCmd, SLOT(yawRight()));
+    connect(yawLeft, SIGNAL(clicked()), qAtCmd, SLOT(yawLeft()));
+    connect(fTrim, SIGNAL(clicked()), qAtCmd, SLOT(sendFTrim())); 
 
     takeOff->setMinimumWidth(80);
     landing->setMinimumWidth(80);

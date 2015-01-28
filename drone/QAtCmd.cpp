@@ -39,7 +39,6 @@ void QAtCmd::sendEmergency() {
     QAtCmd::send((string)"AT*REF=" + to_string(QAtCmd::getNextSequence()) + ",290717952");
 }
 
-
 void QAtCmd::sendMovement(int flag, float roll, float pitch, float gaz, float yaw) {
     QAtCmd::send((string)"AT*PCMD=" + to_string(QAtCmd::getNextSequence())
                                    + "," + to_string(flag) + "," + to_string(*(int*)&roll)
@@ -66,4 +65,36 @@ void QAtCmd::sendComWDG() {
 void QAtCmd::sendControl(ControlMode mode) {
     QAtCmd::send((string)"AT*CTRL=" + to_string(QAtCmd::getNextSequence())
                                    + "," + to_string((int)mode) + ",0");
+}
+
+void QAtCmd::moveBW() {
+    QAtCmd::sendMovement(3, 0, -1, 0, 0);
+}
+
+void QAtCmd::moveFW() {
+    QAtCmd::sendMovement(3, 0, 1, 0, 0);
+}
+
+void QAtCmd::moveRight() {
+    QAtCmd::sendMovement(3, 1, 0, 0, 0);
+}
+
+void QAtCmd::moveLeft() {
+    QAtCmd::sendMovement(3, -1, 0, 0, 0);
+}
+
+void QAtCmd::goUp() {
+    QAtCmd::sendMovement(3, 0, 0, 1, 0);
+}
+
+void QAtCmd::goDown() {
+    QAtCmd::sendMovement(3, 0, 0,-1, 0);
+}
+
+void QAtCmd::yawRight() {
+    QAtCmd::sendMovement(3, 0, 0, 0, 1);
+}
+
+void QAtCmd::yawLeft() {
+    QAtCmd::sendMovement(3, 0, 0, 0, -1);
 }

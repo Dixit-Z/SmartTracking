@@ -62,7 +62,7 @@ void* camera(void* arg) {
     pthread_mutex_init(&mutexVideo, NULL);
 #if output_video == ov_remote_ffmpeg
     if (avformat_open_input(&pFormatCtx, "tcp://192.168.1.1:5555", NULL, NULL) < 0) {
-        cout << "ERREUR !!!";
+        cout << "ERREUR 1 !!!\n";
         return 0;
     }
     avformat_find_stream_info(pFormatCtx, NULL);
@@ -70,11 +70,11 @@ void* camera(void* arg) {
     pCodecCtx = pFormatCtx->streams[0]->codec;
     AVCodec *pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
     if (pCodec == NULL) {
-        cout << "ERREUR !!!";
+        cout << "ERREUR 2 !!!\n";
         return 0;
     }
     if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
-        cout << "ERREUR !!!";
+        cout << "ERREUR 3 !!!\n";
         return 0;
     }
     //pFrame = av_frame_alloc();
@@ -86,7 +86,7 @@ void* camera(void* arg) {
     pConvertCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, PIX_FMT_BGR24, SWS_SPLINE, NULL, NULL, NULL);
     img = cvCreateImage(cvSize(pCodecCtx->width, (pCodecCtx->height == 368) ? 360 : pCodecCtx->height), IPL_DEPTH_8U, 3);
     if (!img) {
-        cout << "ERREUR !!!";
+        cout << "ERREUR 4 !!!";
         return 0;
     }
 
@@ -115,7 +115,7 @@ void* camera(void* arg) {
     fSize.height = frame.rows;
 #endif
 
-    /*  Choix des valeurs basR et hautR pour correspondre au min et max celon une couleur
+    /*  Choix des valeurs basR et hautR pour correspondre au min et max selon une couleur
     Orange  0-22
     Yellow 22- 38
     Green 38-75

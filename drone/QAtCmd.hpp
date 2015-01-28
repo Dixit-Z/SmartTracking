@@ -31,12 +31,20 @@ public:
     static void sendConfig(string key, string value);
     static void sendControl(ControlMode mode);
     static void sendComWDG();
+    static void sendMovement(int flag, float roll, float pitch, float gaz, float yaw);
 
 public slots:
     static void sendTakeOff();
     static void sendLanding();
     static void sendEmergency();
-    static void sendMovement(int flag, float roll, float pitch, float gaz, float yaw);
+    static void moveRight();
+    static void moveLeft();
+    static void goUp();
+    static void goDown();
+    static void yawRight();
+    static void yawLeft();
+    static void moveFW();
+    static void moveBW();
     static void sendFTrim();
 };
 

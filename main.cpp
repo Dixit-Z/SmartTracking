@@ -10,15 +10,6 @@ using namespace std;
 
 int main(int argc, char ** argv) {
 
-/*  QApplication app(argc, argv);
-    QMainWindow main;
-    Ui::MainWindow q;
-    q.setupUi(&main);
-    main.show();
-    q.label->setText( "anc" );
-    app.exec();
-*/
-
     cout << "Configuration du drone ..." << endl;
     AtCmd::initConfigIds("d2e081a3", "be27e2e4", "d87f7e0c");
     AtCmd::sendConfig("control:control_vz_max","700");

@@ -34,7 +34,7 @@ class cible
 		//ListeObjCoord LastTLDPos;
 
 	public :
-
+		float lastdZone;
 		cible(int id);
 		void getName();
 		void setName(string name);
@@ -52,7 +52,7 @@ class cible
 		Mat getPicture();
 		bool getFoundCV();
 		bool getFoundTLD();
-		void getRealPos();
+		ObjCoord getRealPos();
 		void setRealPos();
 };
 

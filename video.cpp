@@ -7,8 +7,8 @@ string winDetected	  = "Image Noir et blanc";
 
 bool drawing;
 bool onDrawing;
-bool enVol;
-bool stopTracking;
+//bool enVol;
+//bool stopTracking;
 Rect rec;
 int activate = 0;
 int HH, HS, HV, LH, LS, LV;
@@ -230,7 +230,21 @@ void* camera(void* arg) {
 			}else{
 				//Action += "Avance, "; pitch = -0.05f;
 			}
-			 Ball.setCurrentCV((float)posX/fSize.width*100,(float)posY/fSize.height*100, (float) dZone);
+			int posZ;
+			if(dZone>Ball.lastdZone)
+			{
+				posZ=1;
+			}
+			else if(dZone > Ball.lastdZone+200 || dZone < Ball.lastdZone-200)
+			{
+				 posZ=0;
+			}
+			else
+			{
+				posZ=-1;
+			}
+			Ball.lastdZone=dZone;
+			 Ball.setCurrentCV((float)posX/fSize.width*100,(float)posY/fSize.height*100, posZ);
 
 			//Traitement du drone à réaliser plus tard.
 			float mi = 15, ma = 50;

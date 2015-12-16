@@ -91,10 +91,11 @@ bool cible::getFoundTLD()
 	return this->foundTLD;
 }
 
-void cible::getRealPos()
+ObjCoord cible::getRealPos()
 {
-	printf("PosOPENCV :\nX:%4f\nY:%4f\nZ:%4f\n", this->currentCVPos.Xcoord, this->currentCVPos.Ycoord, this->currentCVPos.Zcoord);
-	printf("PosTLDTLD :\nX:%4f\nY:%4f\nZ:%4f\n", this->currentTLDPos.Xcoord, this->currentTLDPos.Ycoord, this->currentTLDPos.Zcoord);
+	/*printf("PosOPENCV :\nX:%4f\nY:%4f\nZ:%4f\n", this->currentCVPos.Xcoord, this->currentCVPos.Ycoord, this->currentCVPos.Zcoord);
+	printf("PosTLDTLD :\nX:%4f\nY:%4f\nZ:%4f\n", this->currentTLDPos.Xcoord, this->currentTLDPos.Ycoord, this->currentTLDPos.Zcoord);*/
+	return this->currentRealPos;
 }
 
 void cible::setRealPos()

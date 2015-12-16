@@ -16,7 +16,6 @@ using namespace cv::xfeatures2d;
 class cible
 {
 	private :
-		//ADD TONIGHT
 		vector<KeyPoint> KP;
 		Mat imgGray;
 		Mat desc;
@@ -27,11 +26,14 @@ class cible
 		Rect rec;
 		Mat picture;
 		float densite;
+		
+		//Coordonnées de l'objet selon les différents tracking
 		ObjCoord currentCVPos;
 		ObjCoord currentTLDPos;
 		ObjCoord currentRealPos;
-		//ListeObjCoord LastCVPos;
-		//ListeObjCoord LastTLDPos;
+
+		//Enregistrement des 15 dernières positions
+		ListeObjCoord LastPos;
 
 	public :
 		float lastdZone;
@@ -57,6 +59,7 @@ class cible
 		bool getFoundCV();
 		bool getFoundTLD();
 		ObjCoord getRealPos();
+		//Méthode permettant d'interprêter les résultats des deux tracking
 		void setRealPos();
 };
 

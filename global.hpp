@@ -3,6 +3,7 @@
 
 #include "cible.hpp"
 
+//Variables utilisées dans plusieurs .cpp
 extern cible Ball;
 extern  int HH, HS, HV, LH, LS, LV;
 extern bool stopTracking;

@@ -7,8 +7,6 @@ string winDetected	  = "Image Noir et blanc";
 
 bool drawing;
 bool onDrawing;
-//bool enVol;
-//bool stopTracking;
 Rect rec;
 int activate = 0;
 int HH, HS, HV, LH, LS, LV;
@@ -38,7 +36,6 @@ void* getimg(void* arg) {
 	while (av_read_frame(pFormatCtx, &packet) >= 0 && !drawing) {
 		// Decode progressivement l'image
 		avcodec_decode_video2(pCodecCtx, pFrame, &hasFinished, &packet);
-
 		// Lorsque l'image est prete //
 		if (hasFinished) {
 			// Convertie l'image au format BGR //
@@ -67,7 +64,6 @@ void* camera(void* arg) {
 
 	Size fSize(640, 360);
 
-	int vsplit = 55, hsplit = 55;
 
 
 #if output_video != ov_remote_ffmpeg
@@ -131,7 +127,7 @@ void* camera(void* arg) {
 
 
 		/*
-		   DEBUT TRAITEMENT KEYPOINTS
+		    DEBUT TRAITEMENT KEYPOINTS
 		 */
 
 		Mat imgGray1;
@@ -141,16 +137,16 @@ void* camera(void* arg) {
 		vector<KeyPoint> keypoints_f1;
 		detector->detect(imgGray1, keypoints_f1);
 		Mat img_kp1;
-		drawKeypoints(imgGray1, keypoints_f1, img_kp1, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
+		//drawKeypoints(imgGray1, keypoints_f1, img_kp1, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
 		Ptr<SURF> extractor = SURF::create();
 		Mat desc1;	
 		extractor->compute(imgGray1, keypoints_f1, desc1);
 		BFMatcher matcher(NORM_L2);
 		vector<DMatch> matches;
-		matcher.match(desc1, Ball.getDesc(),matches);
-		Mat img_matches;
-		drawMatches(imgGray1, keypoints_f1, Ball.getimgGray(), Ball.getKP(), matches, img_matches);
-		imshow("test", img_matches);
+		//matcher.match(desc1, Ball.getDesc(),matches);
+		//Mat img_matches;
+		//drawMatches(imgGray1, keypoints_f1, Ball.getimgGray(), Ball.getKP(), matches, img_matches);
+		//imshow("test", img_matches);
 		/*
 		   FIN TRAITEMENT TLD
 		 */
@@ -203,6 +199,7 @@ void* camera(void* arg) {
 		Moments position;
 		int posX=0;
 		int posY=0;
+		roll = pitch = gaz = yaw = 0;
 		//Si la composante connexe n'est pas assez grande ce n'est pas l'objet
 		if(maxArea>900)
 		{
@@ -222,14 +219,8 @@ void* camera(void* arg) {
 			posY = y / dZone;
 			posX+=box.x;//imgOriginal.cols - box.x;
 			posY+=box.y;//imgOriginal.rows - box.y;
-			roll = pitch = gaz = yaw = 0;
+			
 
-			string Action = "Mouvement a effectuer : ";
-			if(dZone > 100000){
-				Action += "Recule, "; //pitch = 0.05f;
-			}else{
-				//Action += "Avance, "; pitch = -0.05f;
-			}
 			int posZ;
 			if(dZone>Ball.lastdZone)
 			{
@@ -245,29 +236,6 @@ void* camera(void* arg) {
 			}
 			Ball.lastdZone=dZone;
 			 Ball.setCurrentCV((float)posX/fSize.width*100,(float)posY/fSize.height*100, posZ);
-
-			//Traitement du drone à réaliser plus tard.
-			float mi = 15, ma = 50;
-			if (posX > fSize.width / 2 + vsplit) {
-				yaw = ((float)(posX-fSize.width/2-vsplit) / (float)(fSize.width/2-vsplit) * (ma - mi) + mi) / 100;
-				Action += "Gauche ("+ to_string(yaw)+"%), ";
-			} else if (posX < fSize.width / 2 - vsplit) {
-				yaw = (((float)(fSize.width/2-vsplit) - (float)(posX)) / (float)(fSize.width/2-vsplit) * -(ma - mi) - mi) / 100;
-				Action += "Droite ("+ to_string(yaw)+"%), ";
-			} if (posY > fSize.height / 2 + hsplit) {
-				Action += "Descendre";  gaz = -0.25f;
-			} else if (posY < fSize.height / 2 - hsplit) {
-				Action += "Monter";     gaz = 0.25f;
-			}
-			if(pitch != 0) {
-				roll = yaw / 2;
-				yaw = 0;
-			}
-			//cout << Action << endl;
-
-			if(activate) {
-				AtCmd::sendMovement(3, roll, pitch, gaz, yaw);
-			}
 		}
 		else
 		{
@@ -280,7 +248,8 @@ void* camera(void* arg) {
 		/*
 		   FIN TRAITEMENT OPENCV
 		 */
-		Ball.getRealPos();
+		Ball.setRealPos();
+		//Ball.getRealPos();
 		// Genere la fenetre de repere //
 		imgLines.setTo(Scalar(255, 255, 255));
 		drawCross(imgLines, fSize.width / 2, fSize.height / 2, Scalar(0, 0, 255));
@@ -303,11 +272,35 @@ void* camera(void* arg) {
 		{
 			break;
 		}
+		string Action = "Mouvement a effectuer : ";
+		ObjCoord tmp = Ball.getRealPos();
+		cout << "x " << tmp.Xcoord << " y " << tmp.Ycoord << " z " << tmp.Zcoord << endl;
+		if(tmp.Zcoord == -1){
+			Action += "Recule, "; pitch = 0.2f;
+		}else if(tmp.Zcoord == 1){
+			Action += "Avance, "; pitch = -0.2f;
+		}
+		if (tmp.Xcoord <= 25 && tmp.Xcoord != 0) {
+			yaw = -0.2f;
+			Action += "Gauche ("+ to_string(yaw)+"%), ";
+		} else if (tmp.Xcoord >= 75) {
+			yaw = 0.2f;
+			Action += "Droite ("+ to_string(yaw)+"%), ";
+		} if (tmp.Ycoord >= 75) {
+			Action += "Descendre";  gaz = -0.2f;
+		} else if (tmp.Ycoord <= 25 && tmp.Ycoord != 0) {
+			Action += "Monter";     gaz = 0.2f;
+		}
+		if(pitch != 0) {
+			roll = yaw / 2;
+			yaw = 0;
+		}
+			cout << Action << endl;
+			AtCmd::sendMovement(3, roll, pitch, gaz, yaw);
 /* TRAITEMENT DE L'INFORMATION DES DEUX METHODES DE TRACKING */
 /* FIN DU TRAITEMENT DES INFOS DE TRACKING */
 	}
 	stopTracking=true;
-	cout << stopTracking << endl;
 	destroyAllWindows();
 	return NULL;
 }
@@ -402,7 +395,7 @@ void *drawingAndParam(void * arg)
 		pthread_mutex_unlock(&mutexVideo);
 		frame = cv::cvarrToMat(img, true);
 #endif
-			imshow(winDetected, frame);
+		imshow(winDetected, frame);
 		}
 		if(!onDrawing && !drawing) //On affiche en direct la sélection de l'utilisateur
 		{
@@ -496,5 +489,4 @@ void MouseCallBack(int event, int x , int y , int flags, void* userdata)
 		rec = Rect(rec.x, rec.y, x-rec.x, y-rec.y);
 	}
 }
-
 

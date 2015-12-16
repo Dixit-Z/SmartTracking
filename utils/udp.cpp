@@ -36,9 +36,9 @@ UDP::UDP(string host, uint16_t port): port(port), ip_addr(host) {
     }
 } 
 void UDP::send(uint8_t *data, int length) {
-    cout << "send (" << length << ") : ";
-    printf("%.*s", length, data);
-    cout << endl;
+    //cout << "send (" << length << ") : ";
+    //printf("%.*s", length, data);
+    //cout << endl;
     
     if(sendto(this->sock, data, length, 0, (struct sockaddr*) this->addr, sizeof(*this->addr)) == -1) {
         perror("send");

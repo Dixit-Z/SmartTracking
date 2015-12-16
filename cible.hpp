@@ -35,6 +35,10 @@ class cible
 
 	public :
 		float lastdZone;
+		float roll;
+		float pitch;
+		float gaz;
+		float yaw;
 		cible(int id);
 		void getName();
 		void setName(string name);

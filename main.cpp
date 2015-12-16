@@ -48,16 +48,16 @@ int main(int argc, char ** argv) {
 
 	#pragma clang diagnostic push
 	while(!stopTracking) {
-		AtCmd::sendMovement(0, 0, 0, 0, 0);
+		AtCmd::sendMovement(3,Ball.roll,Ball.pitch,Ball.gaz, Ball.yaw);
 		if(enVol)
 		{
 			enVol=false;
 			cout << "Attente de démarrage ..." << endl;
 			AtCmd::setLed(AtCmd::LedAnimation::BLINK_RED, 2, 5);
 			AtCmd::sendFTrim();
-			sleep(1);
+			//sleep(1);
 			AtCmd::sendTakeOff();
-			sleep(2);
+			//sleep(2);
 			AtCmd::setLed(AtCmd::LedAnimation::BLINK_GREEN, 2, 5);
 			cout << "Attente de tracking ..." << endl;
 			setActivate(1);

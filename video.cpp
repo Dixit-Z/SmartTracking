@@ -7,9 +7,14 @@ string winDetected	  = "Image Noir et blanc";
 
 bool drawing;
 bool onDrawing;
+Mat imgOriginal;
+Mat imgDetection;
 Rect rec;
+Size fSize(640, 360);
 int activate = 0;
 int HH, HS, HV, LH, LS, LV;
+int posX=0;
+int posY=0;
 pthread_mutex_t mutexVideo;
 IplImage *img;
 AVFormatContext *pFormatCtx = NULL;
@@ -53,6 +58,7 @@ void* camera(void* arg) {
 	//pFormatCtx=(AVFormatContext *)arg;
 	char key;
 	drawing=false;
+	Ball.roll = Ball.pitch = Ball.gaz = Ball.yaw = 0;
 	pthread_mutex_init(&mutexVideo, NULL);
 	liste.suivant=NULL;
 #if output_video == ov_remote_ffmpeg
@@ -61,8 +67,6 @@ void* camera(void* arg) {
 #else	
 	VideoCapture cap(0); //capture video webcam
 #endif
-
-	Size fSize(640, 360);
 
 
 
@@ -86,13 +90,12 @@ void* camera(void* arg) {
 	Mat imgLines = Mat::zeros(fSize.height, fSize.width, CV_8UC3);
 
 	// POSITIONS DRONE
-	float roll;
+	/*float roll;
 	float pitch;
 	float gaz;
-	float yaw;
+	float yaw;*/
 
 	while (true) {
-		Mat imgOriginal;
 
 #if output_video != ov_remote_ffmpeg
 		bool bSuccess = cap.read(imgOriginal); // Nouvelle capture
@@ -106,148 +109,12 @@ void* camera(void* arg) {
 		pthread_mutex_unlock(&mutexVideo);
 		imgOriginal = cv::cvarrToMat(img, true);
 #endif
-		/*
-		   DEBUT TRAITEMENT MATCHTEMPLATE
-		 */
-		Mat result(imgOriginal.cols - Ball.getPicture().cols + 1, imgOriginal.rows - Ball.getPicture().rows + 1, CV_32FC1);
-		matchTemplate(imgOriginal, Ball.getPicture(), result, CV_TM_SQDIFF_NORMED);
-		//normalize(result, result, -1, 1, NORM_MINMAX, -1, Mat());
-		double minVal, maxVal;
-		Point minLoc, maxLoc;
-		minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
-		//Rect target = Rect(maxLoc.x, maxLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
-		Rect target = Rect(minLoc.x, minLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
-		//if(maxVal>0.8)
-		//
-		/*if(minVal<0.076)
-			rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);*/
-		/*
-		   FIN TRAITEMENT MATCHTEMPLATE
-		 */
-
-
-		/*
-		    DEBUT TRAITEMENT KEYPOINTS
-		 */
-
-		Mat imgGray1;
-		int minHessian = 400;
-		cvtColor(imgOriginal(target), imgGray1, COLOR_BGR2GRAY);
-		Ptr<SURF> detector = SURF::create(minHessian);
-		vector<KeyPoint> keypoints_f1;
-		detector->detect(imgGray1, keypoints_f1);
-		Mat img_kp1;
-		//drawKeypoints(imgGray1, keypoints_f1, img_kp1, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
-		Ptr<SURF> extractor = SURF::create();
-		Mat desc1;	
-		extractor->compute(imgGray1, keypoints_f1, desc1);
-		BFMatcher matcher(NORM_L2);
-		vector<DMatch> matches;
-		//matcher.match(desc1, Ball.getDesc(),matches);
-		//Mat img_matches;
-		//drawMatches(imgGray1, keypoints_f1, Ball.getimgGray(), Ball.getKP(), matches, img_matches);
-		//imshow("test", img_matches);
-		/*
-		   FIN TRAITEMENT TLD
-		 */
-		if(minVal<0.15 && keypoints_f1.size()>=Ball.getKP().size())
-		{
-			rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);
-			Ball.setCurrentTLD((float)(target.x+(target.width/2))/fSize.width*100, (float)(target.y+(target.height/2))/fSize.height*100, 0);
-		}
-		else
-		{
-			Ball.setFoundTLD(false);
-		}
-		/*
-		   DEBUT TRAITEMENT OPENCV
-		 */
+		pthread_t mtId,ocId;
+		pthread_create(&mtId, NULL, &matchTemplate, NULL);
+		pthread_create(&ocId, NULL, &opencv, NULL);
 		
-		Mat imgHSV;
-
-		cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Passe de BGR a HSV
-
-		Mat imgDetection;
-
-		inRange(imgHSV, Scalar(LH, LS, LV), Scalar(HH, HS, HV), imgDetection); //Met en noir les parties non comprit dans notre intervalle pour la balle
-
-		//Retire les petits parasite en fond
-		erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-		dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-
-		dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-		erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-
-		int i, nlabels;
-		Rect box;
-		int maxArea=0;
-		Mat labels;
-		Mat centroids;
-		Mat stats;
-		nlabels=connectedComponentsWithStats(imgDetection, labels, stats, centroids, 4, CV_32S);
-
-		for(i=1; i<(int)nlabels;i++)
-		{
-			int *row = (int *) &stats.at<int>(i,0);
-			//printf("i : %d, mon area %d vs %d max \n", i, row[CC_STAT_AREA], maxArea);
-			if(row[CC_STAT_AREA]>maxArea)
-			{
-				box = Rect(row[CC_STAT_LEFT], row[CC_STAT_TOP], row[CC_STAT_WIDTH], row[CC_STAT_HEIGHT]);
-				maxArea=row[CC_STAT_AREA];
-			}
-		}
-		Moments position;
-		int posX=0;
-		int posY=0;
-		roll = pitch = gaz = yaw = 0;
-		//Si la composante connexe n'est pas assez grande ce n'est pas l'objet
-		if(maxArea>900)
-		{
-			Ball.setFoundCV(true);
-			rectangle(imgOriginal, box, Scalar(0,255,0), 4, 8, 0);
-
-			//Calcule l emplacement de l objet
-			position = moments(imgDetection(box));
-
-			double y = position.m01; //y
-			double x = position.m10; //x
-			double dZone = position.m00; //z
-
-
-			// Regarde les actions a effectuer //
-			posX = x / dZone;
-			posY = y / dZone;
-			posX+=box.x;//imgOriginal.cols - box.x;
-			posY+=box.y;//imgOriginal.rows - box.y;
-			
-
-			int posZ;
-			if(dZone>Ball.lastdZone)
-			{
-				posZ=1;
-			}
-			else if(dZone > Ball.lastdZone+200 || dZone < Ball.lastdZone-200)
-			{
-				 posZ=0;
-			}
-			else
-			{
-				posZ=-1;
-			}
-			Ball.lastdZone=dZone;
-			 Ball.setCurrentCV((float)posX/fSize.width*100,(float)posY/fSize.height*100, posZ);
-		}
-		else
-		{
-			if(activate) {//On passe ici quand la zone détectée est trop petite ou que l'on en détecte pas.
-				//AtCmd::sendMovement(0, 0, 0, 0, 0); // CHANGE
-			}
-			Ball.setFoundCV(false);
-		}
-
-		/*
-		   FIN TRAITEMENT OPENCV
-		 */
+		pthread_join(mtId,NULL);
+		pthread_join(ocId,NULL);
 		Ball.setRealPos();
 		//Ball.getRealPos();
 		// Genere la fenetre de repere //
@@ -262,41 +129,43 @@ void* camera(void* arg) {
 		//imshow(winRepere, imgLines);				//Pour montrer la fenetre de repere
 		imshow(winOutputVideo, imgOriginal);		//Image d origine
 		//cout << "apres affichage fenetre" << endl;
+		string Action = "Mouvement a effectuer : ";
+		ObjCoord tmp = Ball.getRealPos();
+		//cout << "x " << tmp.Xcoord << " y " << tmp.Ycoord << " z " << tmp.Zcoord << endl;
+		if(tmp.Zcoord == -1){
+			Action += "Recule, "; Ball.pitch = 0.1f;
+		}else if(tmp.Zcoord == 1){
+			Action += "Avance, "; Ball.pitch = -0.1f;
+		}
+		if (tmp.Xcoord <= 25 && tmp.Xcoord != 0) {
+			Ball.yaw = 0.1f;
+			Action += "Gauche ("+ to_string(Ball.yaw)+"%), ";
+		} else if (tmp.Xcoord >= 75) {
+			Ball.yaw = -0.1f;
+			Action += "Droite ("+ to_string(Ball.yaw)+"%), ";
+		} if (tmp.Ycoord >= 75) {
+			Action += "Descendre";  Ball.gaz = -0.1f;
+		} else if (tmp.Ycoord <= 25 && tmp.Ycoord != 0) {
+			Action += "Monter";    Ball.gaz = 0.1f;
+		}
+		if(Ball.pitch != 0) {
+			Ball.roll = Ball.yaw / 2;
+			Ball.yaw = 0;
+		}
+		if(tmp.Xcoord == 0 && tmp.Ycoord == 0 && tmp.Zcoord == 0)
+			Ball.roll = Ball.pitch = Ball.gaz = Ball.yaw = 0;
+		cout << Action << endl;
+		AtCmd::sendMovement(3, Ball.roll, Ball.pitch, Ball.gaz, Ball.yaw);
 		key=waitKey(10);
 		if(key == 10)
 		{
 			enVol=true;
 			key=-1;
 		}
-		else if (key != -1) //Attends que esc soit presser pour quitter
+		else if (key != -1) //Attends qu'une touche soit presser pour quitter
 		{
 			break;
 		}
-		string Action = "Mouvement a effectuer : ";
-		ObjCoord tmp = Ball.getRealPos();
-		cout << "x " << tmp.Xcoord << " y " << tmp.Ycoord << " z " << tmp.Zcoord << endl;
-		if(tmp.Zcoord == -1){
-			Action += "Recule, "; pitch = 0.2f;
-		}else if(tmp.Zcoord == 1){
-			Action += "Avance, "; pitch = -0.2f;
-		}
-		if (tmp.Xcoord <= 25 && tmp.Xcoord != 0) {
-			yaw = -0.2f;
-			Action += "Gauche ("+ to_string(yaw)+"%), ";
-		} else if (tmp.Xcoord >= 75) {
-			yaw = 0.2f;
-			Action += "Droite ("+ to_string(yaw)+"%), ";
-		} if (tmp.Ycoord >= 75) {
-			Action += "Descendre";  gaz = -0.2f;
-		} else if (tmp.Ycoord <= 25 && tmp.Ycoord != 0) {
-			Action += "Monter";     gaz = 0.2f;
-		}
-		if(pitch != 0) {
-			roll = yaw / 2;
-			yaw = 0;
-		}
-			cout << Action << endl;
-			AtCmd::sendMovement(3, roll, pitch, gaz, yaw);
 /* TRAITEMENT DE L'INFORMATION DES DEUX METHODES DE TRACKING */
 /* FIN DU TRAITEMENT DES INFOS DE TRACKING */
 	}
@@ -384,17 +253,17 @@ void *drawingAndParam(void * arg)
 		if(onDrawing) //Tant que l'utilisateur ne commence pas la sélection!
 		{
 			#if output_video != ov_remote_ffmpeg
-		bool bSuccess = cap.read(frame); // Nouvelle capture
-		if (!bSuccess) {
-			cout << "Impossible de lire le flux video" << endl;
-			break;
-		}
-#else
-		pthread_mutex_lock(&mutexVideo);
-		memcpy(img->imageData, pFrameBGR->data[0], pCodecCtx->width * ((pCodecCtx->height == 368) ? 360 : pCodecCtx->height) * sizeof(uint8_t) * 3);
-		pthread_mutex_unlock(&mutexVideo);
-		frame = cv::cvarrToMat(img, true);
-#endif
+				bool bSuccess = cap.read(frame); // Nouvelle capture
+			if (!bSuccess) {
+				cout << "Impossible de lire le flux video" << endl;
+				break;
+			}
+			#else
+				pthread_mutex_lock(&mutexVideo);
+				memcpy(img->imageData, pFrameBGR->data[0], pCodecCtx->width * ((pCodecCtx->height == 368) ? 360 : pCodecCtx->height) * sizeof(uint8_t) * 3);
+				pthread_mutex_unlock(&mutexVideo);
+				frame = cv::cvarrToMat(img, true);
+			#endif
 		imshow(winDetected, frame);
 		}
 		if(!onDrawing && !drawing) //On affiche en direct la sélection de l'utilisateur
@@ -438,6 +307,9 @@ void *drawingAndParam(void * arg)
 				dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 				erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 				imshow(winParametrage, imgDetection);
+				Moments position;
+				position = moments(imgDetection);
+				Ball.lastdZone = position.m00;
 				key = waitKey(10);
 			}
 				
@@ -488,5 +360,149 @@ void MouseCallBack(int event, int x , int y , int flags, void* userdata)
 	{
 		rec = Rect(rec.x, rec.y, x-rec.x, y-rec.y);
 	}
+}
+void *matchTemplate(void * args)
+{
+	/*
+	   DEBUT TRAITEMENT MATCHTEMPLATE
+	 */
+	Mat result(imgOriginal.cols - Ball.getPicture().cols + 1, imgOriginal.rows - Ball.getPicture().rows + 1, CV_32FC1);
+	matchTemplate(imgOriginal, Ball.getPicture(), result, CV_TM_SQDIFF_NORMED);
+	//normalize(result, result, -1, 1, NORM_MINMAX, -1, Mat());
+	double minVal, maxVal;
+	Point minLoc, maxLoc;
+	minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
+	//Rect target = Rect(maxLoc.x, maxLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
+	Rect target = Rect(minLoc.x, minLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
+	//if(maxVal>0.8)
+	//
+	/*if(minVal<0.076)
+		rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);*/
+	/*
+	   FIN TRAITEMENT MATCHTEMPLATE
+	 */
+
+
+	/*
+		DEBUT TRAITEMENT KEYPOINTS
+	 */
+
+	Mat imgGray1;
+	int minHessian = 400;
+	cvtColor(imgOriginal(target), imgGray1, COLOR_BGR2GRAY);
+	Ptr<SURF> detector = SURF::create(minHessian);
+	vector<KeyPoint> keypoints_f1;
+	detector->detect(imgGray1, keypoints_f1);
+	Mat img_kp1;
+	//drawKeypoints(imgGray1, keypoints_f1, img_kp1, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
+	Ptr<SURF> extractor = SURF::create();
+	Mat desc1;	
+	extractor->compute(imgGray1, keypoints_f1, desc1);
+	//BFMatcher matcher(NORM_L2);
+	//vector<DMatch> matches;
+	//matcher.match(desc1, Ball.getDesc(),matches);
+	//Mat img_matches;
+	//drawMatches(imgGray1, keypoints_f1, Ball.getimgGray(), Ball.getKP(), matches, img_matches);
+	//imshow("test", img_matches);
+	/*
+	   FIN TRAITEMENT TLD
+	 */
+	if(minVal<0.15 && keypoints_f1.size()>=Ball.getKP().size())
+	{
+		rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);
+		Ball.setCurrentTLD((float)(target.x+(target.width/2))/fSize.width*100, (float)(target.y+(target.height/2))/fSize.height*100, 0);
+	}
+	else
+	{
+		Ball.setFoundTLD(false);
+	}
+	return NULL;
+}
+void *opencv(void * args)
+{
+	/*
+	   DEBUT TRAITEMENT OPENCV
+	 */
+	
+	Mat imgHSV;
+
+	cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Passe de BGR a HSV
+
+	inRange(imgHSV, Scalar(LH, LS, LV), Scalar(HH, HS, HV), imgDetection); //Met en noir les parties non comprit dans notre intervalle pour la balle
+
+	//Retire les petits parasite en fond
+	erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+	dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+	dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+	erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+	int i, nlabels;
+	Rect box;
+	int maxArea=0;
+	Mat labels;
+	Mat centroids;
+	Mat stats;
+	nlabels=connectedComponentsWithStats(imgDetection, labels, stats, centroids, 4, CV_32S);
+
+	for(i=1; i<(int)nlabels;i++)
+	{
+		int *row = (int *) &stats.at<int>(i,0);
+		//printf("i : %d, mon area %d vs %d max \n", i, row[CC_STAT_AREA], maxArea);
+		if(row[CC_STAT_AREA]>maxArea)
+		{
+			box = Rect(row[CC_STAT_LEFT], row[CC_STAT_TOP], row[CC_STAT_WIDTH], row[CC_STAT_HEIGHT]);
+			maxArea=row[CC_STAT_AREA];
+		}
+	}
+	Moments position;
+	//Si la composante connexe n'est pas assez grande ce n'est pas l'objet
+	if(maxArea>400)
+	{
+		Ball.setFoundCV(true);
+		rectangle(imgOriginal, box, Scalar(0,255,0), 4, 8, 0);
+
+		//Calcule l emplacement de l objet
+		position = moments(imgDetection(box));
+
+		double y = position.m01; //y
+		double x = position.m10; //x
+		double dZone = position.m00; //z
+		cout << "dZone " << dZone << endl;
+
+		// Regarde les actions a effectuer //
+		posX = x / dZone;
+		posY = y / dZone;
+		posX+=box.x;//imgOriginal.cols - box.x;
+		posY+=box.y;//imgOriginal.rows - box.y;
+		
+
+		int posZ;
+		if(dZone>Ball.lastdZone)
+		{
+			posZ=-1;
+		}
+		else if(dZone > Ball.lastdZone-800 || dZone < Ball.lastdZone+800)
+		{
+			 posZ=0;
+		}
+		else
+		{
+			posZ=1;
+		}
+		 Ball.setCurrentCV((float)posX/fSize.width*100,(float)posY/fSize.height*100, posZ);
+	}
+	else
+	{
+		if(activate) {//On passe ici quand la zone détectée est trop petite ou que l'on en détecte pas.
+			//AtCmd::sendMovement(0, 0, 0, 0, 0); // CHANGE
+		}
+		Ball.setFoundCV(false);
+	}
+
+	/*
+	   FIN TRAITEMENT OPENCV
+	 */
+	return NULL;
 }
 

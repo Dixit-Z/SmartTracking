@@ -42,5 +42,6 @@ AVFormatContext * connexionWebcamDrone(AVFormatContext * Avformat);
 void setAVFormatContext(AVFormatContext * AVFormat);
 void *drawingAndParam(void * arg);
 void MouseCallBack(int event, int x, int y, int flags, void* userdata);
-void* getimage(void* arg);
+void *matchTemplate(void * args);
+void *opencv(void * args);
 #endif

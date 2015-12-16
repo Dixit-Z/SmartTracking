@@ -1,12 +1,5 @@
 #include "video.hpp"
 
-
-//#define ov_local 1
-//#define ov_remote_opencv 2
-//#define ov_remote_ffmpeg 4
-//#define output_video ov_remote_ffmpeg
-//#define output_video ov_local
-
 ListeObjCoord liste;
 string winOutputVideo = "Projet ArDrone";
 string winRepere	  = "Fenetre Repere";
@@ -14,6 +7,8 @@ string winDetected	  = "Image Noir et blanc";
 
 bool drawing;
 bool onDrawing;
+bool enVol;
+bool stopTracking;
 Rect rec;
 int activate = 0;
 int HH, HS, HV, LH, LS, LV;
@@ -59,48 +54,15 @@ void* getimg(void* arg) {
 
 void* camera(void* arg) {
 	//pFormatCtx=(AVFormatContext *)arg;
-	drawing=false;
 	char key;
+	drawing=false;
 	pthread_mutex_init(&mutexVideo, NULL);
 	liste.suivant=NULL;
 #if output_video == ov_remote_ffmpeg
-	/*int errorcode = avformat_open_input(&pFormatCtx, "tcp://192.168.1.1:5555", NULL, NULL);
-	if (errorcode < 0) {
-		cout << "ERREUR CAMERA DRONE!!!" << errorcode;
-		return 0;
-	}
-	avformat_find_stream_info(pFormatCtx, NULL);
-	cout << "la" << endl;
-	av_dump_format(pFormatCtx, 0, "tcp://192.168.1.1:5555", 0);
-	pCodecCtx = pFormatCtx->streams[0]->codec;
-	AVCodec *pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
-	if (pCodec == NULL) {
-		cout << "ERREUR avcodec_find_decoder!!!";
-		return 0;
-	}
-	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
-		cout << "ERREUR avcodec_open2!!!";
-		return 0;
-	}
-	//pFrame = av_frame_alloc();
-	//pFrameBGR = av_frame_alloc();
-	pFrame = avcodec_alloc_frame();
-	pFrameBGR = avcodec_alloc_frame();
-	bufferBGR = (uint8_t*)av_mallocz(avpicture_get_size(PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height) * sizeof(uint8_t));
-	avpicture_fill((AVPicture*)pFrameBGR, bufferBGR, PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height);
-	pConvertCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, PIX_FMT_BGR24, SWS_SPLINE, NULL, NULL, NULL);
-	img = cvCreateImage(cvSize(pCodecCtx->width, (pCodecCtx->height == 368) ? 360 : pCodecCtx->height), IPL_DEPTH_8U, 3);
-	if (!img) {
-		cout << "ERREUR PAS D'IMAGE!!!";
-		return 0;
-	}
-	*/
 	pthread_t ii;
 	pthread_create(&ii, NULL, getimg, NULL);
-
 #else	
 	VideoCapture cap(0); //capture video webcam
-
 #endif
 
 	Size fSize(640, 360);
@@ -161,9 +123,8 @@ void* camera(void* arg) {
 		Rect target = Rect(minLoc.x, minLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
 		//if(maxVal>0.8)
 		//
-		if(minVal<0.076)
-			rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);
-		//printf("%3f\n", minVal);
+		/*if(minVal<0.076)
+			rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);*/
 		/*
 		   FIN TRAITEMENT MATCHTEMPLATE
 		 */
@@ -175,7 +136,7 @@ void* camera(void* arg) {
 
 		Mat imgGray1;
 		int minHessian = 400;
-		cvtColor(imgOriginal, imgGray1, COLOR_BGR2GRAY);
+		cvtColor(imgOriginal(target), imgGray1, COLOR_BGR2GRAY);
 		Ptr<SURF> detector = SURF::create(minHessian);
 		vector<KeyPoint> keypoints_f1;
 		detector->detect(imgGray1, keypoints_f1);
@@ -193,8 +154,15 @@ void* camera(void* arg) {
 		/*
 		   FIN TRAITEMENT TLD
 		 */
-
-
+		if(minVal<0.15 && keypoints_f1.size()>=Ball.getKP().size())
+		{
+			rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);
+			Ball.setCurrentTLD((float)(target.x+(target.width/2))/fSize.width*100, (float)(target.y+(target.height/2))/fSize.height*100, 0);
+		}
+		else
+		{
+			Ball.setFoundTLD(false);
+		}
 		/*
 		   DEBUT TRAITEMENT OPENCV
 		 */
@@ -298,15 +266,12 @@ void* camera(void* arg) {
 		/*
 		   FIN TRAITEMENT OPENCV
 		 */
-
+		Ball.getRealPos();
 		// Genere la fenetre de repere //
 		imgLines.setTo(Scalar(255, 255, 255));
 		drawCross(imgLines, fSize.width / 2, fSize.height / 2, Scalar(0, 0, 255));
 		drawCross(imgLines, posX, posY, Scalar(0, 255, 0));
-		/*line(imgLines, Point(fSize.width / 2 - vsplit, 0), Point(fSize.width / 2 - vsplit, fSize.height), Scalar(0, 0, 255), 1); //VerticaleMin
-		line(imgLines, Point(fSize.width / 2 + vsplit, 0), Point(fSize.width / 2 + vsplit, fSize.height), Scalar(0, 0, 255), 1); //VerticaleMax
-		line(imgLines, Point(0, fSize.height / 2 - hsplit), Point(fSize.width, fSize.height / 2 - hsplit), Scalar(0, 0, 255), 1); //HorizontaleMin
-		line(imgLines, Point(0, fSize.height / 2 + hsplit), Point(fSize.width, fSize.height / 2 + hsplit), Scalar(0, 0, 255), 1); //HorizontaleMax*/
+
 		imgOriginal = imgOriginal & imgLines; // Croise les resultats à la fenetre de sortie //
 
 		// Affichage des fenetre //
@@ -351,18 +316,7 @@ void ajoutListe(ListeObjCoord *liste, ObjCoord newNoeud)
 			liste->suivant=NULL;
 	}
 }
-AVFormatContext * connexionWebcamDrone(AVFormatContext * Avformat)
-{//probleme, l'adresse transmisse n'est pas identique a celle de Avformat
-/*	cout << &Avformat << endl;
-	int errorcode = avformat_open_input(&Avformat, "tcp://192.168.1.1:5555", NULL, NULL);
-	if (errorcode < 0) {
-		cout << "ERREUR CAMERA DRONE!!!" << errorcode;
-		return Avformat;
-	}
-	else
-		return NULL;
-*/
-}
+
 void setAVFormatContext(AVFormatContext * AVFormat)
 {
 	pFormatCtx=AVFormat;
@@ -371,7 +325,7 @@ void *drawingAndParam(void * arg)
 {
 	string winParametrage = "Thresholded";
 	string winDetected = "Parametrages";
-	char key=00;
+	char key;
 	drawing = false;
 	onDrawing = true;
 	pthread_mutex_init(&mutexVideo, NULL);
@@ -414,27 +368,25 @@ void *drawingAndParam(void * arg)
 
 #endif
 	HH=179;LS=1;HS=255;LV=1;HV=255;LH=1;
-	/*cible tmpBall(1);
-	Ball = tmpBall;*/
-	Ball.setName("RedBall");
-	Mat frame;
+	//Mat frame;
 	namedWindow(winDetected, CV_WINDOW_NORMAL);
+	Mat frame;
 	setMouseCallback(winDetected, MouseCallBack, NULL);
 	while(true)
 	{	
-		if(onDrawing) //Tant que l'utilisateur ne commence pas la sélection
+		if(onDrawing) //Tant que l'utilisateur ne commence pas la sélection!
 		{
-#if output_video != ov_remote_ffmpeg
-			bool bSuccess = cap.read(frame); // Nouvelle capture
-			if (!bSuccess) {
-				cout << "Impossible de lire le flux video" << endl;
-				break;
-			}
+			#if output_video != ov_remote_ffmpeg
+		bool bSuccess = cap.read(frame); // Nouvelle capture
+		if (!bSuccess) {
+			cout << "Impossible de lire le flux video" << endl;
+			break;
+		}
 #else
-			pthread_mutex_lock(&mutexVideo);
-			memcpy(img->imageData, pFrameBGR->data[0], pCodecCtx->width * ((pCodecCtx->height == 368) ? 360 : pCodecCtx->height) * sizeof(uint8_t) * 3);
-			pthread_mutex_unlock(&mutexVideo);
-			frame = cv::cvarrToMat(img, true);
+		pthread_mutex_lock(&mutexVideo);
+		memcpy(img->imageData, pFrameBGR->data[0], pCodecCtx->width * ((pCodecCtx->height == 368) ? 360 : pCodecCtx->height) * sizeof(uint8_t) * 3);
+		pthread_mutex_unlock(&mutexVideo);
+		frame = cv::cvarrToMat(img, true);
 #endif
 			imshow(winDetected, frame);
 		}
@@ -446,6 +398,7 @@ void *drawingAndParam(void * arg)
 		}
 		if(drawing) //L'utilisateur a fini de sélectionner
 		{
+			//cible Ball(1);
 			namedWindow(winParametrage, CV_WINDOW_NORMAL);
 			setMouseCallback(winDetected, NULL, NULL);	
 			rectangle(frame, rec, CV_RGB(51,156,204),2,8,0);
@@ -521,15 +474,13 @@ void MouseCallBack(int event, int x , int y , int flags, void* userdata)
 	}
 	else if (event == CV_EVENT_LBUTTONUP) 	
 	{
-		rec = Rect(rec.x, rec.y, x-rec.x, y-rec.y);
-
-		drawing = true;
+			rec = Rect(rec.x, rec.y, x-rec.x, y-rec.y);
+			drawing = true;
 	}
 	else if(event == CV_EVENT_MOUSEMOVE && !onDrawing)
 	{
 		rec = Rect(rec.x, rec.y, x-rec.x, y-rec.y);
 	}
 }
-
 
 

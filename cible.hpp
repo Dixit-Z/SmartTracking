@@ -29,6 +29,9 @@ class cible
 		float densite;
 		ObjCoord currentCVPos;
 		ObjCoord currentTLDPos;
+		ObjCoord currentRealPos;
+		//ListeObjCoord LastCVPos;
+		//ListeObjCoord LastTLDPos;
 
 	public :
 
@@ -49,6 +52,8 @@ class cible
 		Mat getPicture();
 		bool getFoundCV();
 		bool getFoundTLD();
+		void getRealPos();
+		void setRealPos();
 };
 
 #endif

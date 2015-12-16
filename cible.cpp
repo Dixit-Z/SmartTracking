@@ -1,5 +1,7 @@
 #include "cible.hpp"
 
+#define TERR 5
+
 cible::cible(int id)
 {
 	this->id = id;
@@ -87,4 +89,44 @@ bool cible::getFoundCV()
 bool cible::getFoundTLD()
 {
 	return this->foundTLD;
+}
+
+void cible::getRealPos()
+{
+	printf("PosOPENCV :\nX:%4f\nY:%4f\nZ:%4f\n", this->currentCVPos.Xcoord, this->currentCVPos.Ycoord, this->currentCVPos.Zcoord);
+	printf("PosTLDTLD :\nX:%4f\nY:%4f\nZ:%4f\n", this->currentTLDPos.Xcoord, this->currentTLDPos.Ycoord, this->currentTLDPos.Zcoord);
+}
+
+void cible::setRealPos()
+{
+	//listeObjCoord tmpList = 
+	float diffX = this->currentCVPos.Xcoord - this->currentTLDPos.Xcoord;
+	float diffY = this->currentCVPos.Ycoord - this->currentTLDPos.Ycoord;
+	float diffZ = this->currentCVPos.Zcoord - this->currentTLDPos.Zcoord;
+
+	if(this->foundCV && !this->foundTLD)
+	{
+		this->currentRealPos=currentCVPos;		
+	}
+	else if(this->foundCV && this->foundTLD)
+	{
+		if(diffX<=TERR && diffY<=TERR && diffZ<=TERR)
+		{
+			this->currentRealPos=this->currentCVPos;
+		}
+		else
+		{
+			this->currentRealPos=this->currentCVPos;
+		}
+	}
+	else if(this->foundTLD && !this->foundCV)
+	{
+		this->currentRealPos=this->currentTLDPos;
+	}
+	else
+	{
+		this->currentRealPos.Xcoord=0;
+		this->currentRealPos.Ycoord=0;
+		this->currentRealPos.Zcoord=0;
+	}
 }

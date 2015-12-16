@@ -1,12 +1,16 @@
 #include "video.hpp"
 
 ListeObjCoord liste;
+//Noms des fenêtres openCV
 string winOutputVideo = "Projet ArDrone";
 string winRepere	  = "Fenetre Repere";
 string winDetected	  = "Image Noir et blanc";
 
+//Pour la sélection à l'init
 bool drawing;
 bool onDrawing;
+
+//Traitement de l'image
 Mat imgOriginal;
 Mat imgDetection;
 Rect rec;
@@ -15,6 +19,8 @@ int activate = 0;
 int HH, HS, HV, LH, LS, LV;
 int posX=0;
 int posY=0;
+
+//Récupération des images du drone
 pthread_mutex_t mutexVideo;
 IplImage *img;
 AVFormatContext *pFormatCtx = NULL;
@@ -22,6 +28,8 @@ AVCodecContext  *pCodecCtx;
 AVFrame         *pFrame, *pFrameBGR;
 uint8_t         *bufferBGR;
 SwsContext      *pConvertCtx;
+
+//Instance de la classe cible représentant notre objet à tracker
 cible Ball(1);
 
 void setActivate(int value) {
@@ -82,18 +90,12 @@ void* camera(void* arg) {
 	fSize.height = frame.rows;
 #endif
 
-	// Initialise les fenetres //
+	// Initialise les fenetres
 	namedWindow(winDetected, 1);
 	namedWindow(winOutputVideo, 1);
 
-	//Cree une image noir de taille de notre image tmp
+	//Creer une image noir de taille de notre image tmp
 	Mat imgLines = Mat::zeros(fSize.height, fSize.width, CV_8UC3);
-
-	// POSITIONS DRONE
-	/*float roll;
-	float pitch;
-	float gaz;
-	float yaw;*/
 
 	while (true) {
 
@@ -110,14 +112,17 @@ void* camera(void* arg) {
 		imgOriginal = cv::cvarrToMat(img, true);
 #endif
 		pthread_t mtId,ocId;
+		//Appel aux threads de tracking
 		pthread_create(&mtId, NULL, &matchTemplate, NULL);
 		pthread_create(&ocId, NULL, &opencv, NULL);
 		
 		pthread_join(mtId,NULL);
 		pthread_join(ocId,NULL);
+
+		//Fonction permettant d'interpreter les résultats des deux tracking
 		Ball.setRealPos();
-		//Ball.getRealPos();
-		// Genere la fenetre de repere //
+
+		// Genere la fenetre de repere 
 		imgLines.setTo(Scalar(255, 255, 255));
 		drawCross(imgLines, fSize.width / 2, fSize.height / 2, Scalar(0, 0, 255));
 		drawCross(imgLines, posX, posY, Scalar(0, 255, 0));
@@ -128,7 +133,6 @@ void* camera(void* arg) {
 		imshow(winDetected, imgDetection);			//Pour montrer l image avec le masque
 		//imshow(winRepere, imgLines);				//Pour montrer la fenetre de repere
 		imshow(winOutputVideo, imgOriginal);		//Image d origine
-		//cout << "apres affichage fenetre" << endl;
 		string Action = "Mouvement a effectuer : ";
 		ObjCoord tmp = Ball.getRealPos();
 		//cout << "x " << tmp.Xcoord << " y " << tmp.Ycoord << " z " << tmp.Zcoord << endl;
@@ -166,8 +170,6 @@ void* camera(void* arg) {
 		{
 			break;
 		}
-/* TRAITEMENT DE L'INFORMATION DES DEUX METHODES DE TRACKING */
-/* FIN DU TRAITEMENT DES INFOS DE TRACKING */
 	}
 	stopTracking=true;
 	destroyAllWindows();
@@ -197,6 +199,7 @@ void setAVFormatContext(AVFormatContext * AVFormat)
 {
 	pFormatCtx=AVFormat;
 }
+//Thread d'initialisation
 void *drawingAndParam(void * arg)
 {
 	string winParametrage = "Thresholded";
@@ -244,7 +247,6 @@ void *drawingAndParam(void * arg)
 
 #endif
 	HH=179;LS=1;HS=255;LV=1;HV=255;LH=1;
-	//Mat frame;
 	namedWindow(winDetected, CV_WINDOW_NORMAL);
 	Mat frame;
 	setMouseCallback(winDetected, MouseCallBack, NULL);
@@ -283,13 +285,13 @@ void *drawingAndParam(void * arg)
 			Ball.setPicture(selection);
 			while(key != 'q')
 			{
-				//Bar pour choix de la couleur
+				//Trackbar pour choix de la couleur
 				createTrackbar("LowH", winParametrage, &LH, 179); //Hue (0 - 179)
 				createTrackbar("HighH", winParametrage, &HH, 179);
-				//Bar pour Saturation comparer au blanc
+				//Trackbar pour Saturation comparer au blanc
 				createTrackbar("LowS", winParametrage, &LS, 255); //Saturation (0 - 255)
 				createTrackbar("HighS", winParametrage, &HS, 255);
-				//Bar pour la lumminosite comparer au noir
+				//Trackbar pour la lumminosite comparer au noir
 				createTrackbar("LowV", winParametrage, &LV, 255);//Value (0 - 255)
 				createTrackbar("HighV", winParametrage, &HV, 255);
 				Mat imgHSV;
@@ -298,21 +300,26 @@ void *drawingAndParam(void * arg)
 
 				Mat imgDetection;
 
-				inRange(imgHSV, Scalar(LH, LS, LV), Scalar(HH, HS, HV), imgDetection); //Met en noir les parties non comprit dans notre intervalle pour la balle
+				inRange(imgHSV, Scalar(LH, LS, LV), Scalar(HH, HS, HV), imgDetection); //Met en noir les parties non comprises dans l'intervalle de la couleur choisie par l'utilisateur
 
-				//Retire les petits parasite en fond
+				//Retire les bruits
 				erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 				dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
 				dilate(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 				erode(imgDetection, imgDetection, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
 				imshow(winParametrage, imgDetection);
+
+				//Calcul de la "distance" à la cible. On s'en sert comme seuil.
 				Moments position;
 				position = moments(imgDetection);
 				Ball.lastdZone = position.m00;
+
 				key = waitKey(10);
 			}
-				
+			
+			//Extraction des points d'intérêts de la sélection de l'utilisateur
 			Mat graySelect;
 			int minHessian = 800;
 			cvtColor(selection, graySelect, COLOR_BGR2GRAY);
@@ -327,23 +334,18 @@ void *drawingAndParam(void * arg)
 			Ball.setimgGray(graySelect);
 			Ball.setKP(KP);
 			Ball.setDesc(desc);
-			
-			/*while(key!='z')
-			{
-				imshow("PTS INTERETS", KPimg);
-				key = waitKey(10);
-			}*/
-
 			break;
 		}
 		key = waitKey(10);
 	}
-
+	//Fin de l'initiatlisation on ferme toutes les fenêtres et on passe au tracking
 	destroyAllWindows();
 #if output_video != ov_remote_ffmpeg
 	cap.release();
 #endif
 }
+
+//Permet de capturer les actions de la souris
 void MouseCallBack(int event, int x , int y , int flags, void* userdata)
 {
 	if (event == CV_EVENT_LBUTTONDOWN)
@@ -361,6 +363,8 @@ void MouseCallBack(int event, int x , int y , int flags, void* userdata)
 		rec = Rect(rec.x, rec.y, x-rec.x, y-rec.y);
 	}
 }
+
+//Thread tracking du MatchTemplate (combiné aux points d'intérêts
 void *matchTemplate(void * args)
 {
 	/*
@@ -374,10 +378,6 @@ void *matchTemplate(void * args)
 	minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
 	//Rect target = Rect(maxLoc.x, maxLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
 	Rect target = Rect(minLoc.x, minLoc.y, Ball.getPicture().cols, Ball.getPicture().rows);
-	//if(maxVal>0.8)
-	//
-	/*if(minVal<0.076)
-		rectangle(imgOriginal, target, Scalar::all(-1), 2, 8, 0);*/
 	/*
 	   FIN TRAITEMENT MATCHTEMPLATE
 	 */
@@ -405,7 +405,7 @@ void *matchTemplate(void * args)
 	//drawMatches(imgGray1, keypoints_f1, Ball.getimgGray(), Ball.getKP(), matches, img_matches);
 	//imshow("test", img_matches);
 	/*
-	   FIN TRAITEMENT TLD
+	   FIN TRAITEMENT KEYPOINTS
 	 */
 	if(minVal<0.15 && keypoints_f1.size()>=Ball.getKP().size())
 	{
@@ -423,7 +423,6 @@ void *opencv(void * args)
 	/*
 	   DEBUT TRAITEMENT OPENCV
 	 */
-	
 	Mat imgHSV;
 
 	cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Passe de BGR a HSV
@@ -443,8 +442,11 @@ void *opencv(void * args)
 	Mat labels;
 	Mat centroids;
 	Mat stats;
+	
+	//Calcul des différentes composantes connexes de l'image
 	nlabels=connectedComponentsWithStats(imgDetection, labels, stats, centroids, 4, CV_32S);
 
+	//On recherche la composante connexe la plus grande
 	for(i=1; i<(int)nlabels;i++)
 	{
 		int *row = (int *) &stats.at<int>(i,0);
@@ -455,7 +457,9 @@ void *opencv(void * args)
 			maxArea=row[CC_STAT_AREA];
 		}
 	}
+
 	Moments position;
+
 	//Si la composante connexe n'est pas assez grande ce n'est pas l'objet
 	if(maxArea>400)
 	{
@@ -470,25 +474,24 @@ void *opencv(void * args)
 		double dZone = position.m00; //z
 		cout << "dZone " << dZone << endl;
 
-		// Regarde les actions a effectuer //
 		posX = x / dZone;
 		posY = y / dZone;
-		posX+=box.x;//imgOriginal.cols - box.x;
-		posY+=box.y;//imgOriginal.rows - box.y;
+		posX+=box.x;
+		posY+=box.y;
 		
 
 		int posZ;
-		if(dZone>Ball.lastdZone)
+		if(dZone>Ball.lastdZone+800)
 		{
-			posZ=-1;
+			posZ=-1; //Trop près de l'objet, il faut reculer.
 		}
 		else if(dZone > Ball.lastdZone-800 || dZone < Ball.lastdZone+800)
 		{
-			 posZ=0;
+			 posZ=0; //On est à distance correcte de l'objet
 		}
 		else
 		{
-			posZ=1;
+			posZ=1; //Trop loin de l'objet, il faut avancer.
 		}
 		 Ball.setCurrentCV((float)posX/fSize.width*100,(float)posY/fSize.height*100, posZ);
 	}

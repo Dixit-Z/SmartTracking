@@ -33,7 +33,9 @@ class cible
 		ObjCoord currentRealPos;
 
 		//Enregistrement des 15 dernières positions
-		ListeObjCoord LastPos;
+		ListeObjCoord LastRealPos;
+		ListeObjCoord LastTLDPos;
+		ListeObjCoord LastCVPos;
 
 	public :
 		float lastdZone;

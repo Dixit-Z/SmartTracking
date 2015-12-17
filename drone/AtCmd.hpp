@@ -78,6 +78,6 @@ public:
     static void stopLoop();
 
 };
-static AtCmd::MovementFlag operator+(AtCmd::MovementFlag const& a, AtCmd::MovementFlag const& b);
+AtCmd::MovementFlag operator+(AtCmd::MovementFlag const& a, AtCmd::MovementFlag const& b);
 
 #endif

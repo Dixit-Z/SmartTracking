@@ -107,22 +107,25 @@ void cible::setRealPos()
 
 	if(this->foundCV && !this->foundTLD)
 	{
-		this->currentRealPos=currentCVPos;		
+		this->currentRealPos=currentCVPos;
+		//Rajouté comparaison au précédent
 	}
 	else if(this->foundCV && this->foundTLD)
 	{
-		if(diffX<=TERR && diffY<=TERR && diffZ<=TERR)
+		if(diffX<TERR && diffX>-TERR && diffY<TERR && diffY>-TERR && diffZ<TERR && diffZ>-TERR)
 		{
 			this->currentRealPos=this->currentCVPos;
 		}
 		else
 		{
 			this->currentRealPos=this->currentCVPos;
+			//Position couleur plus précise, comparaison au précédent plus tard
 		}
 	}
 	else if(this->foundTLD && !this->foundCV)
 	{
 		this->currentRealPos=this->currentTLDPos;
+		//Rajouté comparaison au précédent
 	}
 	else
 	{

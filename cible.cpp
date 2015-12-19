@@ -122,15 +122,15 @@ void cible::setRealPos()
 			//Position couleur plus précise, comparaison au précédent plus tard
 		}
 	}
-	else if(this->foundTLD && !this->foundCV)
-	{
-		this->currentRealPos=this->currentTLDPos;
-		//Rajouté comparaison au précédent
-	}
 	else
 	{
 		this->currentRealPos.Xcoord=0;
 		this->currentRealPos.Ycoord=0;
 		this->currentRealPos.Zcoord=0;
 	}
+	//else if(this->foundTLD && !this->foundCV)
+	//{
+		//this->currentRealPos=this->currentTLDPos;
+		//Rajouté comparaison au précédent
+	//}
 }

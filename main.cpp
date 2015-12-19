@@ -48,6 +48,7 @@ int main(int argc, char ** argv) {
 
 	#pragma clang diagnostic push
 	while(!stopTracking) {
+		sleep(2);
 		AtCmd::sendMovement(3,Ball.roll,Ball.pitch,Ball.gaz, Ball.yaw);
 		if(enVol)
 		{

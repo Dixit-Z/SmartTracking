@@ -135,43 +135,53 @@ void* camera(void* arg) {
 		imshow(winOutputVideo, imgOriginal);		//Image d origine
 		string Action = "Mouvement a effectuer : ";
 		ObjCoord tmp = Ball.getRealPos();
-		//cout << "x " << tmp.Xcoord << " y " << tmp.Ycoord << " z " << tmp.Zcoord << endl;
+		cout << "x " << tmp.Xcoord << " y " << tmp.Ycoord << " z " << tmp.Zcoord << endl;
+		/*
 		if(tmp.Zcoord == -1){
 			Action += "Recule, "; Ball.pitch = 0.05f;
-		}else if(tmp.Zcoord == 1){
+		}
+		else if(tmp.Zcoord == 1){
 			Action += "Avance, "; Ball.pitch = -0.05f;
 		}
 		else
-			{
-				Ball.pitch = 0;
-			}
-		if (tmp.Xcoord <= 25 && tmp.Xcoord != 0) {
-			Ball.yaw = 0.05f;
+		{
+			Ball.pitch = 0;
+		}
+		*/
+		if (tmp.Xcoord <= 35.0 && tmp.Xcoord != 0) {
+			Ball.yaw = -0.2f;
 			Action += "Gauche ("+ to_string(Ball.yaw)+"%), ";
-		} else if (tmp.Xcoord >= 75) {
-			Ball.yaw = -0.05f;
+		} else if (tmp.Xcoord >= 65.0) {
+			Ball.yaw = 0.2f;
 			Action += "Droite ("+ to_string(Ball.yaw)+"%), ";
 		}
 		else
 		{
 			Ball.yaw = 0;	
-		} if (tmp.Ycoord >= 75) {
-			Action += "Descendre";  Ball.gaz = -0.05f;
-		} else if (tmp.Ycoord <= 25 && tmp.Ycoord != 0) {
-			Action += "Monter";    Ball.gaz = 0.05f;
+		}
+		if (tmp.Ycoord >= 65.0) {
+			Action += "Descendre";  Ball.gaz = -0.2f;
+		} else if (tmp.Ycoord <= 35.0 && tmp.Ycoord != 0) {
+			Action += "Monter";    Ball.gaz = 0.2f;
 		}
 		else
 		{
 			Ball.gaz = 0;
 		}
-		if(Ball.pitch != 0) {
+		/*if(Ball.pitch != 0) {
 			Ball.roll = Ball.yaw / 2;
 			Ball.yaw = 0;
-		}
+		}*/
 		if(tmp.Xcoord == 0 && tmp.Ycoord == 0 && tmp.Zcoord == 0)
+		{
 			Ball.roll = Ball.pitch = Ball.gaz = Ball.yaw = 0;
+			
+		}
+		if(Ball.pitch == 0)
+			AtCmd::sendMovement(0, Ball.roll, Ball.pitch, Ball.gaz, Ball.yaw);
+		else
+			AtCmd::sendMovement(3, Ball.roll, Ball.pitch, Ball.gaz, Ball.yaw);
 		//cout << Action << endl;
-		AtCmd::sendMovement(3, Ball.roll, Ball.pitch, Ball.gaz, Ball.yaw);
 		key=waitKey(10);
 		if(key == 10)
 		{
@@ -471,9 +481,9 @@ void *opencv(void * args)
 	}
 
 	Moments position;
-
+	//cout << maxArea << endl << (int)(Ball.lastdZone*0.3) << endl;
 	//Si la composante connexe n'est pas assez grande ce n'est pas l'objet
-	if(maxArea>200)
+	if(maxArea>200)//(int)(0.3*Ball.lastdZone))
 	{
 		Ball.setFoundCV(true);
 		rectangle(imgOriginal, box, Scalar(0,255,0), 4, 8, 0);
@@ -493,11 +503,11 @@ void *opencv(void * args)
 		
 
 		int posZ=0;
-		if(dZone>Ball.lastdZone+Ball.lastdZone*0.1)
+		if(dZone>Ball.lastdZone+Ball.lastdZone*0.2)
 		{
 			posZ=-1; //Trop près de l'objet, il faut reculer.
 		}
-		else if(dZone > Ball.lastdZone-Ball.lastdZone*0.1 || dZone < Ball.lastdZone+Ball.lastdZone*0.1)
+		else if(dZone > Ball.lastdZone-Ball.lastdZone*0.2 && dZone < Ball.lastdZone+Ball.lastdZone*0.2)
 		{
 			 posZ=0; //On est à distance correcte de l'objet
 		}

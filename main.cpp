@@ -9,7 +9,7 @@ using namespace std;
 bool stopTracking=false;
 bool enVol=false;
 int main(int argc, char ** argv) {
-
+#if output_video == ov_remote_ffmpeg
 	cout << "Configuration du drone ..." << endl;
 	AtCmd::initConfigIds("d2e081a3", "be27e2e4", "d87f7e0c");
 	AtCmd::sendConfig("control:control_vz_max","700");
@@ -38,10 +38,12 @@ int main(int argc, char ** argv) {
 
 	AtCmd::sendControl(AtCmd::ControlMode::LogControl);
 	cout << "Demarrage du flux video ..." << endl;
-	
+#endif
 	pthread_t id;
 	pthread_create(&id, NULL, &drawingAndParam, NULL);
-	AtCmd::startLoop(200);
+#if output_video == ov_remote_ffmpeg
+	AtCmd::startLoop(300);
+#endif
 	pthread_join(id,NULL);
 	pthread_t pid;
 	pthread_create(&pid, NULL, &camera, NULL);
@@ -49,7 +51,7 @@ int main(int argc, char ** argv) {
 	#pragma clang diagnostic push
 	while(!stopTracking) {
 		sleep(2);
-		AtCmd::sendMovement(3,Ball.roll,Ball.pitch,Ball.gaz, Ball.yaw);
+		//AtCmd::sendMovement(3,Ball.roll,Ball.pitch,Ball.gaz, Ball.yaw);
 		if(enVol)
 		{
 			enVol=false;

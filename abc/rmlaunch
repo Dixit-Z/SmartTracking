@@ -1,5 +1,6 @@
 #!/bin/bash
 
 rm test.a
+rm ../*.o
 make
 ./test.a
